@@ -1,0 +1,39 @@
+// Place your settings in this file to overwrite default and user settings.
+{
+    "files.exclude": {
+        "out": true, // set this to true to hide the "out" folder with the compiled JS files
+        "dist": true,
+        "**/*.pyc": true,
+        ".nyc_output": true,
+        "obj": true,
+        "bin": true,
+        "**/__pycache__": true,
+        "**/node_modules": true,
+        ".vscode-test": false,
+        ".vscode test": false,
+        "**/.mypy_cache/**": true,
+    },
+    "search.exclude": {
+        "out": true, // set this to false to include "out" folder in search results
+        "dist": true,
+        "**/.mypy_cache/**": true,
+        "coverage": true,
+        "languageServer*/**": true,
+        ".vscode-test": true,
+        ".vscode test": true
+    },
+    "[python]": {
+        "editor.formatOnSave": false,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": true
+        }
+    },
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": true
+    },
+    "python.languageServer": "Default",
+    "cucumberautocomplete.skipDocStringsFormat": true,
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.exclude": ["extras", "extras/", "extras/*"],
+    "python.linting.ignorePatterns": ["extras", "extras/", "extras/*"]
+}

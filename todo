@@ -1,0 +1,22 @@
+# Make the camera movable
+
+- Tiles move properly
+- Entities move properly
+- Dragging grid works great
+- Building now works
+- Entities and tiles aren't draw if off the screen.
+- Other views are working great too now
+
+- Possible option for more tiles in the new world menu?
+- As long as it's a big square, everything works, the overlays work great now, and the menus scale 90%,
+- Need to make the right side bar work for bigger screen sizes, and figure out how to set a minimum
+- Bottom layer now scales nicely, never implemented the clicking for changing the view, might return, might not?
+- Right icons now scale properly, with more or less being shown
+- Need to make the main menus scale nicer (everything works actually, apart from main menu, potentially because it never gets the new values?)
+- Currently, expansion works great, but doesn't include the perlin noise, maybe make it all dirt or something? Also need to make the regen world not do it if it's a bad number
+- For the expansion, obviously we need to loop until we don't get a bad number from the perlin noise, but also, we can generate an entire bigger perlin noise grid (slow, I know), and then cut out the edge
+
+- Mess around with non-square worlds
+- Investigate pausing
+
+- Somehow move the entry road out, since it'll get stuck near the middle when you expand, maybe add more than one eventually.
