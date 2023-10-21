@@ -2,12 +2,10 @@ import numpy as np
 
 from classes import Tile  # , biome_to_tile
 
-DISALLOWED_SIZES = [0, 2, 6, 10, 14, 18, 22, 26, 30, 34, 38, 42, 46, 50, 54, 58, 62, 66, 70, 74, 78, 82, 86, 90, 94, 98]
-
 
 def generate_perlin_noise_2d(width: int, height: int, res: tuple[int, int]) -> np.ndarray[tuple[int, int], Tile]:  # type: ignore[type-var]
 
-    if width in DISALLOWED_SIZES or width % 2 == 1:
+    if width % 4 != 0:
         raise TypeError(f"Width {width} is not allowed")
 
     delta = (res[0] / width, res[1] / height)
@@ -30,6 +28,8 @@ def generate_perlin_noise_2d(width: int, height: int, res: tuple[int, int]) -> n
     n0 = n00 * (1 - t[:, :, 0]) + t[:, :, 0] * n10
     n1 = n01 * (1 - t[:, :, 0]) + t[:, :, 0] * n11
     return np.sqrt(2) * ((1 - t[:, :, 1]) * n0 + t[:, :, 1] * n1)  # type: ignore[no-any-return]
+
+
 
 
 # np.random.seed(5)

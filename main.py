@@ -7,7 +7,8 @@ import pygame
 from classes import get_type_by_name
 from entities import Pedestrian, Vehicle
 from file_manager import load_preferences
-from generate_world import generate_world
+#from generate_world import generate_world
+from generate_world_2 import generate_world
 # ============================
 from menu import draw_main_menu, draw_pause_menu
 from menu_elements import handle_collisions
@@ -156,7 +157,7 @@ while True:
                 generate_side_bar(tool, draw_style, icon_offset, window, map.settings)
 
             elif event.key == pygame.K_r:
-                if map.width % 4 not in [1, 2, 3]:
+                if map.width % 4 != 0:  # Only multiples of 4 work
                     map = generate_world(map_settings=map.settings, seed=randint(1, 100))  # pyright: ignore
 
             elif event.key == pygame.K_ESCAPE:
