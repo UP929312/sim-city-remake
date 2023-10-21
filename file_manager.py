@@ -5,6 +5,8 @@ from typing import TypedDict
 
 from map_object import Map
 
+BASE_PREFERENCES: PreferencesType = {"max_vehicles": 500, "max_people": 0, "rainbow_entities": False, "old_roads": False}
+
 
 class PreferencesType(TypedDict):
     max_vehicles: int
@@ -12,7 +14,6 @@ class PreferencesType(TypedDict):
     rainbow_entities: bool
     old_roads: bool
 
-BASE_PREFERENCES: PreferencesType = {"max_vehicles": 500, "max_people": 0, "rainbow_entities": False, "old_roads": False}
 
 def save_game(map: Map, save_file_name: str) -> None:
     with open("saves/" + save_file_name, "w") as file:

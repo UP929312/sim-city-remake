@@ -7,16 +7,26 @@
 - Entities and tiles aren't draw if off the screen.
 - Other views are working great too now
 
-- Possible option for more tiles in the new world menu?
 - As long as it's a big square, everything works, the overlays work great now, and the menus scale 90%,
 - Need to make the right side bar work for bigger screen sizes, and figure out how to set a minimum
 - Bottom layer now scales nicely, never implemented the clicking for changing the view, might return, might not?
-- Right icons now scale properly, with more or less being shown
+- Right, icons now scale properly, with more or less being shown
 - Need to make the main menus scale nicer (everything works actually, apart from main menu, potentially because it never gets the new values?)
+
 - Currently, expansion works great, but doesn't include the perlin noise, maybe make it all dirt or something? Also need to make the regen world not do it if it's a bad number
 - For the expansion, obviously we need to loop until we don't get a bad number from the perlin noise, but also, we can generate an entire bigger perlin noise grid (slow, I know), and then cut out the edge
 
 - Mess around with non-square worlds
-- Investigate pausing
+- Investigate pausing?
 
-- Somehow move the entry road out, since it'll get stuck near the middle when you expand, maybe add more than one eventually.
+- Hmmm, can I only regenerate the side bar on change? Done, 3% more efficient
+- flake8 . --ignore=E501,E226,W503,E203,E241,PBP113,E301
+
+- Generating a huuuuge perlin noise function is essentially instant, so maybe change the perlin noise width and height to instead take a subsection of a bigger slice, that way when we're expanding, we just take a bigger slice? I guess it's just generating the biome right, so we can re-generate the base material using biome_to_tile.
+- Maybe we can make a 3x3 grid of worlds, just in case I ever want to add multiple worlds or something, I don't think lag will work with bigger than 96 worlds?
+- The perlin function seems to take width and height into account for more than just size of array, like bigger maps have less detail.
+- I should swap out the perlin noise function for one that takes coords...
+
+- Save world menu uses a static image, which doesn't scale
+- The recursion limit needs to be changed depending on world size, and I guess pathfinding is going to struggle way more on bigger worlds.
+- There's a bug with expansion, maybe reset world, which draws over the side bar? This happens on Q as well - Should be fixed now

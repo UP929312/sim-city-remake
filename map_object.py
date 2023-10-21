@@ -3,15 +3,15 @@ from random import choice
 from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
+from pathfinding.core.grid import Grid  # type: ignore[import]
+from pathfinding.finder.best_first import BestFirst  # type: ignore[import]
 
-from classes import ROADS, Tile, grass
+from classes import ROADS, Tile, biome_to_tile, entry_road
 from entities import EntityList
 from utils import MapSettingsType, get_neighbour_coords
 
 sys.setrecursionlimit(1500)  # 1200 used to be the limit, now it's not
 
-from pathfinding.core.grid import Grid  # type: ignore[import]
-from pathfinding.finder.best_first import BestFirst  # type: ignore[import]
 
 if TYPE_CHECKING:
     from entities import Vehicle
@@ -38,9 +38,9 @@ class Map:
 
         self.entity_lists: EntityList = {"Vehicle": [], "Pedestrian": []}
         self.services: dict[SERVICE_VEHICLES, list[Vehicle]] = {
-           "FireStation": [],
-           "PoliceStation": [],
-           "Hospital": [],
+            "FireStation": [],
+            "PoliceStation": [],
+            "Hospital": [],
         }
         self.emergency_vehicles_on_route: dict[SERVICE_VEHICLES, list[Vehicle]] = {
             "FireStation": [],
@@ -53,7 +53,7 @@ class Map:
     @property
     def width(self) -> int:
         return self.settings["map_width"]
-    
+
     @property
     def height(self) -> int:
         return self.settings["map_height"]
@@ -85,7 +85,7 @@ class Map:
     def __getitem__(self, key: tuple[int, int]) -> Tile:  # type: ignore[return]
         try:
             return self.tiles[key]  # type: ignore[no-any-return]
-        except:
+        except IndexError:
             print("ERROR", key)
 
     def __setitem__(self, key: tuple[int, int], value: Tile) -> None:
@@ -104,7 +104,7 @@ class Map:
             return self.route_cache[(start, end)]
         matrix = np.array([
             [(self[x, y].type.name in ROADS or (x, y) in [start, end]) and self[x, y].fire_ticks is None
-              for x in range(self.width)] for y in range(self.height)
+             for x in range(self.width)] for y in range(self.height)
         ])
         grid = Grid(matrix=matrix)
         start_node, end_node = grid.node(*start), grid.node(*end)
@@ -177,8 +177,13 @@ class Map:
             for service_coords in service_list:
                 pass
         """
-    
+
     def expand(self) -> None:
+        # === We need to move the current entry road, we replace it later on
+        current_entry_road = self[0, self.height//2]
+        tile_type = biome_to_tile(current_entry_road.biome, include_water=self.settings["generate_lakes"])
+        self[0, self.height//2] = Tile(tile_type, biome=current_entry_road.biome)
+        # ===
         self.settings["map_width"] += 2
         self.settings["map_height"] += 2
         self.tiles = np.pad(self.tiles, 1, mode="edge")  # type: ignore[call-overload]
@@ -186,7 +191,10 @@ class Map:
             for y in range(self.height):
                 if x == 0 or y == 0 or x == self.width - 1 or y == self.height - 1:
                     self[x, y] = Tile()
+
+        self[0, self.height//2] = Tile(entry_road, biome=self[0, self.height//2].biome)
         self.redraw_entire_map()
+
 
 def has_connected_road(map: Map, x: int, y: int) -> bool:
     return any(tile.road == 2 for tile in map.get_neighbours(x, y))

@@ -19,6 +19,7 @@ DESIRED_FPS = 30
 ICON_SIZE = 32
 BACKGROUND_COLOUR = (40, 40, 40)
 
+
 class MapSettingsType(TypedDict):
     seed: int
     trees: int
@@ -52,6 +53,7 @@ DEFAULT_MAP_SETTINGS: MapSettingsType = {
 class DeleteEntity(Exception):
     pass
 
+
 def rot_center(image: pygame.surface.Surface, angle: int) -> pygame.surface.Surface:
     """rotate a `Surface`, maintaining position."""
     if angle == 0:
@@ -62,16 +64,15 @@ def rot_center(image: pygame.surface.Surface, angle: int) -> pygame.surface.Surf
     return rot_sprite
 
 
-
 IMAGES: dict[str, pygame.surface.Surface] = {}
 for image in listdir("images"):
     if image.endswith(".png"):
         IMAGES[image.removesuffix(".png")] = pygame.image.load("images/" + image)
 for road_image in listdir("images/roads"):
     for rotation in [0, 90, 180, 270, 360]:
-        IMAGES["roads/" + road_image.removesuffix(".png")+f"_rotation_{rotation}"] = rot_center(pygame.image.load("images/roads/" + road_image), rotation)
+        IMAGES["roads/" + road_image.removesuffix(".png") + f"_rotation_{rotation}"] = rot_center(pygame.image.load("images/roads/" + road_image), rotation)
 for entity_image in listdir("images/entities"):
-    IMAGES["entities/"+entity_image.removesuffix(".png")] = pygame.image.load("images/entities/" + entity_image)
+    IMAGES["entities/" + entity_image.removesuffix(".png")] = pygame.image.load("images/entities/" + entity_image)
 
 with open("name_list.txt", "r", encoding="utf-8") as file:
     people_names = file.read().split("\n")
@@ -81,23 +82,26 @@ def get_random_name() -> str:
     return choice(people_names)
 
 
-def cursor_is_in_world(map: Map, window: pygame.surface.Surface, mouse_x: int | None, mouse_y: int | None, is_tile: bool=True) -> bool:
+def cursor_is_in_world(map: Map, window: pygame.surface.Surface, mouse_x: int | None, mouse_y: int | None, is_tile: bool = True) -> bool:
     return (
-            mouse_x is not None
-            and mouse_y is not None
-            and mouse_x // (1 if is_tile else 16) < map.width
-            and mouse_y // (1 if is_tile else 16) < map.height
-            and mouse_x >= 0
-            and mouse_y >= 0
-            and mouse_x < window.get_width() - ICON_SIZE
-            and mouse_y < window.get_height() - ICON_SIZE
-        )
+        mouse_x is not None
+        and mouse_y is not None
+        and mouse_x // (1 if is_tile else 16) < map.width
+        and mouse_y // (1 if is_tile else 16) < map.height
+        and mouse_x >= 0
+        and mouse_y >= 0
+        and mouse_x < window.get_width() - ICON_SIZE
+        and mouse_y < window.get_height() - ICON_SIZE
+    )
+
 
 def clip(num: int | float, minimum: int, maximum: int) -> int:
     return min(max(num, minimum), maximum)  # type: ignore[return-value]
 
 
 NEIGHBOURS = [(0, -1), (1, 0), (0, 1), (-1, 0)]
+
+
 def get_neighbour_coords(map_width: int, map_height: int, x: int, y: int, include_void_tiles: bool = False) -> list[tuple[int, int] | tuple[int, int]]:
     neighbours: list[tuple[int, int] | tuple[int, int]] = []
     for x_neigh, y_neigh in NEIGHBOURS:
@@ -140,10 +144,21 @@ def get_all_grid_coords(x1: int, y1: int, x2: int, y2: int, single_place: bool) 
         for y in range(top_left_y, bottom_right_y + 1, y_step):
             yield (x, y)
 
+
 def get_class_properties(cls: object) -> list[str]:
     return [i for i in dir(cls) if not i.startswith("_")]
 
+
+def reset_map(window: pygame.surface.Surface, map: Map) -> tuple[int, int]:  # type: ignore[name-defined]
+    map.check_connected()
+    window.fill(BACKGROUND_COLOUR, rect=(0, 0, window.get_width()-ICON_SIZE, window.get_height()-ICON_SIZE))
+    x_offset = window.get_width() // 2 - (TILE_WIDTH * map.width // 2) - TILE_WIDTH  # Center the world
+    y_offset = window.get_height() // 2 - (TILE_WIDTH * map.height // 2) - TILE_WIDTH  # Center the world
+    map.redraw_entire_map()
+    return x_offset, y_offset
+
 # ================================================================================================
+
 
 def centered_text(window: pygame.surface.Surface, font_size: int, text: str | int, text_colour: tuple[int, int, int], x: int, y: int) -> None:
     font = pygame.font.SysFont("Comic Sans MS", font_size)

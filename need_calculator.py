@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-
-import numpy as np
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from map_object import Map
@@ -65,7 +63,7 @@ def calculate_happiness(map: Map, x: int, y: int) -> int:
     """
     # -------------------------------
 
-    #'''
+    # '''
     map[x, y].happiness_reasons = {
         "has_water_neighbour": has_water_neighbour,
         "has_grass_neighbour": has_grass_neighbour,
@@ -106,7 +104,7 @@ def calculate_needs(world):
 
                     elif world[x, y].type == 'Office':
                         jobs += world[x, y].density
-                        
+
                     elif world[x, y].water > 0:
                         water_amount += world[x, y].water
 
@@ -126,13 +124,13 @@ def calculate_needs(world):
 
     if len(errors) == 0:
         errors = ["All jobs satisfied"]
-    
+
     return errors
 """
 
 """
 def calcualte_cash():
-    
+
     if counter % 60 == 0:
         calculate_cash()
 
@@ -144,7 +142,7 @@ def calcualte_cash():
         residents_pay = jobs
     if shops < residents:
         residents_pay = shops
-        
+
     cash_per_cycle = int(residents_pay + commercial_pay + industrial_pay * 0.5) + int(0.1 * residents) #Income sysytem
     cash_per_cycle = cash_per_cycle - int(counter_dict["Park"] * 50) - int(counter_dict["Fire station"] * 100) - int(counter_dict["Hospital"] * 100) - (counter_dict["Police station"] * 100)
     cash += cash_per_cycle

@@ -8,13 +8,12 @@ from map_object import Map
 from utils import (DEFAULT_MAP_SETTINGS, VERSION, MapSettingsType, clip,
                    get_neighbour_coords)
 
-DISALLOWED_SIZES = [0, 2, 6, 10, 14, 18, 22, 26, 30, 34, 38, 42, 46, 50, 54, 58, 62, 66, 70, 74, 78, 82, 86, 90, 94, 98]
 
 # Probably a modified version of https://pvigier.github.io/2018/06/13/perlin-noise-numpy.html
 def generate_perlin_noise_2d(width: int, height: int, res: tuple[int, int]) -> np.ndarray[tuple[int, int], Tile]:  # type: ignore[type-var]
     """Returns a size by size matrix in the range of -1 to 1"""
 
-    if width in DISALLOWED_SIZES or width % 2 == 1:
+    if width % 4 in [1, 2, 3]:
         raise TypeError(f"Width {width} is not allowed")
 
     delta = (res[0] / width, res[1] / height)
@@ -38,6 +37,7 @@ def generate_perlin_noise_2d(width: int, height: int, res: tuple[int, int]) -> n
     n1 = n01 * (1 - t[:, :, 0]) + t[:, :, 0] * n11
     return np.sqrt(2) * ((1 - t[:, :, 1]) * n0 + t[:, :, 1] * n1)  # type: ignore[no-any-return]
 
+
 FLOORING_TO_PLANT = {
     "Grass": tree,
     "Sand": shrub,
@@ -47,7 +47,7 @@ FLOORING_TO_PLANT = {
 }
 
 
-def generate_world(map_settings: MapSettingsType=DEFAULT_MAP_SETTINGS, seed: int | None = None) -> Map:
+def generate_world(map_settings: MapSettingsType = DEFAULT_MAP_SETTINGS, seed: int | None = None) -> Map:
     map_width, map_height = map_settings["map_width"], map_settings["map_height"]
     world: np.ndarray[tuple[int, int], Tile] = np.array(  # type: ignore[assignment, type-var]
         [[Tile() for _ in range(map_width)] for _ in range(map_height)]
@@ -75,7 +75,7 @@ def generate_world(map_settings: MapSettingsType=DEFAULT_MAP_SETTINGS, seed: int
         for x in range(map_width):
             for y in range(map_height):
                 neighbours = get_neighbour_coords(map_width, map_height, x, y)
-                total = sum([world[_x, _y].water for (_x, _y) in neighbours])  # Won't always have 4 neighbours
+                total = sum(world[_x, _y].water for (_x, _y) in neighbours)  # Won't always have 4 neighbours
                 world[x, y].water = int(clip(num=total / len(neighbours), minimum=0, maximum=255))
     # ==================================================================
     # Tree generation

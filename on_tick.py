@@ -12,8 +12,6 @@ if TYPE_CHECKING:
 
 # from entities import Vehicle
 
-# import time
-
 
 """
 Plan:

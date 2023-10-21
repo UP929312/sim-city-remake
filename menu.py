@@ -13,14 +13,17 @@ from utils import DEFAULT_MAP_SETTINGS, MapSettingsType
 
 SAVE_MENU_IMAGE = pygame.image.load("images/savemenu.png")
 
+
 def margins(window: pygame.surface.Surface) -> tuple[int, int, int, int]:
     LEFT_MARGIN = int(window.get_width() * 0.15)
     RIGHT_MARGIN = int(window.get_width() - LEFT_MARGIN)
     ELEMENT_WIDTH = int(window.get_width() - (LEFT_MARGIN * 2))
-    TOP_MARGIN = int(window.get_height() // 5)
+    TOP_MARGIN = int(window.get_height() // 6)
     return LEFT_MARGIN, RIGHT_MARGIN, ELEMENT_WIDTH, TOP_MARGIN
 
 # ================================================================================================================================
+
+
 def load_game_menu(window: pygame.surface.Surface, *_: Any) -> str:
     button_height = window.get_height() * 0.1
     left_margin, right_margin, element_width, top_margin = margins(window)
@@ -48,17 +51,19 @@ def load_game_menu(window: pygame.surface.Surface, *_: Any) -> str:
             return result  # type: ignore[return-value]
 
 # ================================================================================================================================
+
+
 def world_settings_menu(window: pygame.surface.Surface, *_: Any) -> MapSettingsType:
     left_margin, _, element_width, top_margin = margins(window)  # type: ignore[assignment]
     map_settings = DEFAULT_MAP_SETTINGS
-    elements:list[ToggleRow | IntegerSelector | Button] = [
+    elements: list[ToggleRow | IntegerSelector | Button] = [
         BACK_BUTTON,
         ToggleRow(left_margin, top_margin + 0, element_width, 64, "Generate Lakes", "generate_lakes", map_settings["generate_lakes"]),
         ToggleRow(left_margin, top_margin + 64, element_width, 64, "Generate Ruins", "generate_ruins", map_settings["generate_ruins"]),
         ToggleRow(left_margin, top_margin + 128, element_width, 64, "Generate Biomes", "generate_biomes", map_settings["generate_biomes"]),
         IntegerSelector(left_margin, top_margin + 200, element_width, 128, "Trees", "trees", map_settings["trees"], minimum=0, maximum=1000),
-        IntegerSelector(left_margin, top_margin + 328, element_width, 128, "Starting cash", "starting_cash", map_settings["starting_cash"],  #  fmt: skip
-                        minimum=500, maximum=100_000, big_step=1000, small_step=100, middle=50000),  #  fmt: skip
+        IntegerSelector(left_margin, top_margin + 328, element_width, 128, "Starting cash", "starting_cash", map_settings["starting_cash"],  # fmt: skip
+                        minimum=500, maximum=100_000, big_step=10000, small_step=1000, middle=50000),  # fmt: skip
         IntegerSelector(left_margin, top_margin + 456, element_width, 128, "Map Size", "map_width", map_settings["map_width"], minimum=24,
                         maximum=96, small_step=1, big_step=10, middle=48),  # fmt: skip
         Button(left_margin, window.get_height() - (top_margin // 2), element_width, 64, "Start", lambda *_: "New game"),
@@ -86,7 +91,6 @@ def settings_menu(window: pygame.surface.Surface, *_: Any) -> NoReturn:
 
     while True:
         handle_menu(window, "Settings", elements)  # type: ignore[arg-type]
-
         prefs: PreferencesType = prefs | {x.key: x.value for x in elements if hasattr(x, "key")}  # type: ignore[union-attr, no-redef]
         save_preferences(prefs)
 

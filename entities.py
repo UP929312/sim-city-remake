@@ -19,10 +19,10 @@ ROUTES = {
     "industrial": [(3, "Spawn", "Shop"), (3, "Shop", "Spawn"), (2, "Shop", "Shop"), (2, "Shop", "Shop")],
 }
 ROUTES_CHANCES = {
-    route_type: [(sum([x[0] for x in route_values[0:i]]), route[1], route[2]) for i, route in enumerate(route_values, 1)] for route_type, route_values in ROUTES.items()
+    route_type: [(sum(x[0] for x in route_values[0:i]), route[1], route[2]) for i, route in enumerate(route_values, 1)] for route_type, route_values in ROUTES.items()
 }  # Makes each route accumulative
-
 LOCATION_TYPE = tuple[int, int]
+
 
 def create_route(map: Map, route_type: str) -> tuple[None, None] | tuple[tuple[int, int] | None, tuple[int, int] | None]:
     routes = ROUTES_CHANCES[route_type]
@@ -59,7 +59,7 @@ rotated_entities_cache = {
 class Entity:
     __slots__ = ("max_path_length", "speed", "direction_offsets", "entity_subtype", "start", "end", "rotation", "current_loc", "x_offset", "y_offset", "path")
 
-    def __init__(self, entity_subtype: str, map: Map, start: tuple[int, int], end: tuple[int, int], rainbow: bool = False, enforce_minimum_distance: bool = False, route: list[LOCATION_TYPE] | None=None) -> None:
+    def __init__(self, entity_subtype: str, map: Map, start: tuple[int, int], end: tuple[int, int], rainbow: bool = False, enforce_minimum_distance: bool = False, route: list[LOCATION_TYPE] | None = None) -> None:
         self.entity_subtype = randint(1, num_of_entity_sprites[self.__class__.__name__]) if rainbow else entity_subtype
 
         self.start = start
@@ -105,7 +105,7 @@ class Entity:
     def draw(self, window: pygame.surface.Surface, x_offset: int, y_offset: int) -> None:
         image = rotated_entities_cache[f"{self.__class__.__name__.lower()}_{self.entity_subtype}_rotation_{self.rotation}"]
 
-        x_loc = (self.current_loc[0] * TILE_WIDTH) +  self.x_offset + x_offset
+        x_loc = (self.current_loc[0] * TILE_WIDTH) + self.x_offset + x_offset
         y_loc = (self.current_loc[1] * TILE_WIDTH) + self.y_offset + y_offset
         if x_loc < 0 or y_loc < 0 or x_loc > window.get_width()-ICON_SIZE or y_loc > window.get_height()-ICON_SIZE:
             return  # Don't draw anything off screen
@@ -141,6 +141,7 @@ class Entity:
             if map[self.end[0], self.end[1]].type.name != "FireStation":
                 new_fire_engine = Vehicle("FireEngine", map, self.end, self.start)
                 map.entity_lists["Vehicle"].append(new_fire_engine)
+
 
 class Vehicle(Entity):
     """
@@ -189,14 +190,15 @@ class Person:
     A class representing a person.
     """
 
-    pass
     __slots__ = ("name", "age")
+
     def __init__(self) -> None:
         self.name = get_random_name()
         self.age = randint(18, 65)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.name=}, {self.age=})"
+
 
 class Pedestrian(Entity):
     __slots__ = ()
@@ -209,9 +211,11 @@ class Pedestrian(Entity):
         "DOWN":  (13, 0, 180),
     }
 
+
 class Passenger(Person):
     __slots__ = ()
     """Does nothing now, but will in a vehicle's "passenger" list"""
+
 
 class EntityList(TypedDict):
     Vehicle: list[Vehicle]

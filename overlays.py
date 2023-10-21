@@ -55,18 +55,27 @@ def generate_side_bar(tool: str, draw_style: str, icon_offset: int, window: pyga
         IconButton(x, 192, ICON_SIZE, ICON_SIZE, "click_icon_road", icon_image="road_icon", is_selected=(tool == "road"), on_click=button_press),  # type: ignore[arg-type]
         IconButton(x, 256, ICON_SIZE, ICON_SIZE, "scroll_up", icon_image="up_arrow", is_selected=True, on_click=button_press),  # type: ignore[arg-type]
         IconButton(x, window.get_height()-ICON_SIZE*3, ICON_SIZE, ICON_SIZE, "scroll_down", icon_image="down_arrow", is_selected=True, on_click=button_press),  # type: ignore[arg-type]
-        IconButton(x, window.get_height()-ICON_SIZE, ICON_SIZE, ICON_SIZE, "policy_screen", icon_image="policy_menu", is_selected=True, on_click=lambda *_: handle_policy_change(window, tool, draw_style, icon_offset, settings)  # type: ignore[arg-type]
-        ),
+        IconButton(x, window.get_height()-ICON_SIZE, ICON_SIZE, ICON_SIZE, "policy_screen", icon_image="policy_menu", is_selected=True,
+                   on_click=lambda *_: handle_policy_change(window, tool, draw_style, icon_offset, settings)),  # type: ignore[arg-type]
     ]
     dynamic_buttons = []
     for i, icon in enumerate([ICON_LIST[(i + icon_offset) % len(ICON_LIST)] for i in range(verticle_tiles)]):
         button = IconButton(x, 320 + i * 64, ICON_SIZE, ICON_SIZE, f"click_icon_{icon}", icon_image=icon, is_selected=(tool == icon.removesuffix("_icon")), on_click=button_press)  # type: ignore[arg-type]
         dynamic_buttons.append(button)
+
+    for element in static_buttons + dynamic_buttons:
+        element.draw(window)
+
     return static_buttons + dynamic_buttons
 
-def generate_bottom_bar(window: pygame.surface.Surface, map: Map, view: str, run_counter: int, clock: pygame.time.Clock, error_text: str) -> list[RowOfButtons]:
-    return [RowOfButtons(0, window.get_height() - ICON_SIZE, window.get_width()-ICON_SIZE, ICON_SIZE,
-                        [f"Cash: {map.cash}", view.removesuffix("_view").capitalize(), f"FPS: {int(clock.get_fps())}, Vehics: {len(map.entity_lists['Vehicle'])}", str(run_counter)]
-                        +([error_text] if error_text else []),
-                        # lambda *_: None
-    )]
+
+def generate_bottom_bar(window: pygame.surface.Surface, map: Map, view: str, run_counter: int, clock: pygame.time.Clock, error_text: str) -> RowOfButtons:
+    row_of_buttons = RowOfButtons(0, window.get_height() - ICON_SIZE, window.get_width()-ICON_SIZE, ICON_SIZE,
+        [
+        f"Cash: {map.cash}", view.removesuffix("_view").capitalize(),
+        f"FPS: {int(clock.get_fps())}, Vehics: {len(map.entity_lists['Vehicle'])}",
+        str(run_counter)
+        ] + ([error_text] if error_text else [])
+    )
+    row_of_buttons.draw(window)
+    return row_of_buttons

@@ -6,16 +6,17 @@ import pygame
 
 from classes import get_type_by_name
 from entities import Pedestrian, Vehicle
-from file_manager import PreferencesType, load_preferences
-from generate_world import DISALLOWED_SIZES, generate_world
+from file_manager import load_preferences
+from generate_world import generate_world
 # ============================
 from menu import draw_main_menu, draw_pause_menu
 from menu_elements import handle_collisions
 from on_tick import on_tick
 from overlays import generate_bottom_bar, generate_side_bar
-from utils import (BACKGROUND_COLOUR, DESIRED_FPS, IMAGES, TICK_RATE,
-                   TILE_WIDTH, VERSION, MapSettingsType, cursor_is_in_world,
-                   get_all_grid_coords, get_class_properties)
+from utils import (BACKGROUND_COLOUR, DESIRED_FPS, ICON_SIZE, IMAGES,
+                   TICK_RATE, TILE_WIDTH, VERSION, MapSettingsType,
+                   cursor_is_in_world, get_all_grid_coords,
+                   get_class_properties, reset_map)
 
 # https://www.freepik.com/search?format=search&query=fire%20station%20icon%20pixel%20art
 print("main: Starting")
@@ -62,17 +63,12 @@ views = (
 )
 view = views[0]
 
-def reset_map(window: pygame.surface.Surface, map: "Map") -> tuple[PreferencesType, int, int]:  # type: ignore[name-defined]
-    preferences = load_preferences()
-    map.check_connected()
-    window.fill(BACKGROUND_COLOUR)
-    x_offset = window.get_width() // 2 - (TILE_WIDTH * map.width // 2) - TILE_WIDTH  # Center the world
-    y_offset =  window.get_height() // 2 - (TILE_WIDTH * map.height // 2) - TILE_WIDTH  # Center the world
-    map.redraw_entire_map()
-    return preferences, x_offset, y_offset
 # ============================
 map = draw_main_menu(window)
-preferences, x_offset, y_offset = reset_map(window, map)
+preferences = load_preferences()
+x_offset, y_offset = reset_map(window, map)
+# DRAWING Right Bar
+side_bar_elements = generate_side_bar(tool, draw_style, icon_offset, window, map.settings)
 # ============================
 clock = pygame.time.Clock()
 
@@ -89,7 +85,7 @@ while True:
         x_offset += offsets[pygame.key.name(held_key)][0]
         y_offset += offsets[pygame.key.name(held_key)][1]
 
-        window.fill(BACKGROUND_COLOUR)
+        window.fill(BACKGROUND_COLOUR, rect=(0, 0, window.get_width()-ICON_SIZE, window.get_height()-ICON_SIZE))
         map.redraw_entire_map()
 
         mouse_down_x, mouse_down_y = None, None
@@ -104,8 +100,7 @@ while True:
         assert mouse_motion_tile_x is not None and mouse_motion_tile_y is not None
 
         # GENERATE DRAG GRID
-        mouse_buttons_held = pygame.mouse.get_pressed()
-        if mouse_buttons_held[0] and cursor_is_in_world(map, window, mouse_down_tile_x, mouse_down_tile_y):
+        if pygame.mouse.get_pressed()[0] and cursor_is_in_world(map, window, mouse_down_tile_x, mouse_down_tile_y):
             assert mouse_down_tile_x is not None and mouse_down_tile_y is not None
             for x, y in get_all_grid_coords(mouse_down_tile_x, mouse_down_tile_y, mouse_motion_tile_x, mouse_motion_tile_y, single_place=draw_style == "single"):
                 window.blit(IMAGES["dragged_square"].convert_alpha(), ((x * TILE_WIDTH)+x_offset, (y * TILE_WIDTH)+y_offset))
@@ -113,21 +108,14 @@ while True:
 
         window.blit(IMAGES["dragged_square"], ((mouse_motion_tile_x * TILE_WIDTH)+x_offset, (mouse_motion_tile_y * TILE_WIDTH)+y_offset))
         map[mouse_motion_tile_x, mouse_motion_tile_y].redraw = True
-    # ---------------------------------------------------------
-    # DRAWING - Bottom bar
-    if tool == "select" and cursor_is_in_world(map, window, mouse_motion_tile_x, mouse_motion_tile_y):
-        if len(map[mouse_motion_tile_x, mouse_motion_tile_y].error_list) > 0:  # type: ignore[index]
+        # ---------------------------------------------------------
+        # DRAWING - Bottom bar
+        if tool == "select" and len(map[mouse_motion_tile_x, mouse_motion_tile_y].error_list) > 0:  # type: ignore[index]
             error_text = map[mouse_motion_tile_x, mouse_motion_tile_y].error_list[0]  # type: ignore[index]
 
-    bottom_bar_elements = generate_bottom_bar(window, map, view, run_counter, clock, error_text)
-    bottom_bar_elements[0].draw(window)
+    generate_bottom_bar(window, map, view, run_counter, clock, error_text)
     error_text = ""
-    # ----------------------------------------------------------
-    # DRAWING Right Bar
-    side_bar_elements = generate_side_bar(tool, draw_style, icon_offset, window, map.settings)
-    for element in side_bar_elements:
-        element.draw(window)
-
+    # DRAWING - Side bar only happens on update
     # =========================================================
     # CONTROLS
     for event in pygame.event.get():
@@ -136,7 +124,7 @@ while True:
             sys.exit()
         # ----------------------------------------------------------
         if event.type == pygame.VIDEORESIZE:
-            window.fill(BACKGROUND_COLOUR)
+            window.fill(BACKGROUND_COLOUR, rect=(0, 0, window.get_width()-ICON_SIZE, window.get_height()-ICON_SIZE))
             map.redraw_entire_map()
         # ----------------------------------------------------------
         # KEY DOWN
@@ -144,8 +132,9 @@ while True:
             if event.key == pygame.K_SPACE:
                 pause = not pause
 
-            elif event.key == pygame.K_q:
-                _, x_offset, y_offset = reset_map(window, map)
+            elif event.key == pygame.K_q:  # Re-center map
+                x_offset, y_offset = reset_map(window, map)
+                generate_side_bar(tool, draw_style, icon_offset, window, map.settings)
 
             elif event.key in [pygame.K_COMMA, pygame.K_PERIOD]:
                 view_index += 1 if event.key == pygame.K_PERIOD else -1
@@ -163,17 +152,19 @@ while True:
 
             elif event.key == pygame.K_e:
                 map.expand()
-                _, x_offset, y_offset = reset_map(window, map)
+                x_offset, y_offset = reset_map(window, map)
+                generate_side_bar(tool, draw_style, icon_offset, window, map.settings)
 
             elif event.key == pygame.K_r:
-                if map.width not in DISALLOWED_SIZES:
+                if map.width % 4 not in [1, 2, 3]:
                     map = generate_world(map_settings=map.settings, seed=randint(1, 100))  # pyright: ignore
 
             elif event.key == pygame.K_ESCAPE:
                 result = draw_pause_menu(window, map)
                 if result is not None:
                     map = result
-                preferences, x_offset, y_offset = reset_map(window, map)
+                preferences = load_preferences()
+                x_offset, y_offset = reset_map(window, map)
         # ----------------------------------------------------------
         # MOUSE DOWN
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_LEFT:  # When they click the button
@@ -185,6 +176,8 @@ while True:
                 tool, draw_style, icon_offset, new_settings = right_bar_result
                 map.settings: MapSettingsType = map.settings | new_settings  # type: ignore[misc]
                 map.redraw_entire_map()
+                # DRAWING Right Bar, only if it updates
+                side_bar_elements = generate_side_bar(tool, draw_style, icon_offset, window, map.settings)
 
             vehicles = [x for x in map.entity_lists["Vehicle"] if x.current_loc == (mouse_down_tile_x, mouse_down_tile_y)]
             if vehicles:
@@ -257,7 +250,6 @@ while True:
         x, y = randint(1, map.width - 1), randint(1, map.height - 1)  # Can't remember why I exclude the outer edge
         map[x, y].type.on_random_tick(map, x, y)
 
-    #if run_counter % 2 == 0:
     pygame.display.update()
 
     clock.tick(DESIRED_FPS)

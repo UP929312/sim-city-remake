@@ -75,7 +75,7 @@ class GenericTile:
 
     def get_general_view_texture(self, map: Map, x: int, y: int, old_roads: bool) -> pygame.Surface:
         return IMAGES[self.general_view_image].convert_alpha()
-        #return rot_center(IMAGES[self.general_view_image].convert_alpha(), 0 if not self.random_rotation else 90*((x*1111 + y*3)%4))
+        # return rot_center(IMAGES[self.general_view_image].convert_alpha(), 0 if not self.random_rotation else 90*((x*1111 + y*3)%4))
 
     def draw_nearest_services(self, _: Tile) -> COLOUR_TYPE:
         return self.base_colour
@@ -281,7 +281,7 @@ class OfficeZoning(Zoning):
 # ZONED BUILDINGS
 
 
-class GenericZonedBuilding(GenericTile):  #################################
+class GenericZonedBuilding(GenericTile):  # ################################
     __slots__ = ()
     def __init__(self, base_colour: tuple[int, int, int]) -> None:
         super().__init__(cost=0, need_road=True, base_colour=base_colour)
@@ -291,7 +291,7 @@ class GenericZonedBuilding(GenericTile):  #################################
         return (10, 25 * happiness, 10)
 
     def on_random_tick(self, map: Map, x: int, y: int) -> None:
-        #print(f"Random tick for {self.__class__.__name__}")
+        # print(f"Random tick for {self.__class__.__name__}")
         """
         for service_type in ["FireStation", ]:
             all_tiles = map.get_all_tiles_by_type(service_type)
@@ -433,7 +433,7 @@ class LilyPad(Water):  # Inherit from Water
     __slots__ = ()
     def __init__(self) -> None:
         super().__init__()
-        self.cost=None
+        self.cost = None
 
 
 class Tree(GenericTile):
@@ -534,7 +534,8 @@ def get_type_by_name(name: str) -> GenericTile:  # type: ignore[return]
             return cls
     print(f"classes: DEBUG: COULD NOT FIND {name}")
 
-def biome_to_tile(biome: float, include_water: bool=False) -> Sand | Dirt | Water | Grass | Gravel:
+
+def biome_to_tile(biome: float, include_water: bool = False) -> Sand | Dirt | Water | Grass | Gravel:
     """Used by the generator to convert noise to tiles, as well
     as when removing zoning to replace the floor that was there before
     Include water is used for generating without lakes, as well as when
@@ -543,7 +544,7 @@ def biome_to_tile(biome: float, include_water: bool=False) -> Sand | Dirt | Wate
         return sand
     elif biome > 0:
         return dirt
-        #return Gravel()
+        # return Gravel()
     else:  # > -0.6
         if include_water and biome <= -0.6:
             return water
@@ -552,8 +553,8 @@ def biome_to_tile(biome: float, include_water: bool=False) -> Sand | Dirt | Wate
 
 
 class Tile:
-    __slots__ = ("type", "biome", "quality", "road", "water", "density", "level", "happiness",  "people_inside", "fire_ticks",
-                 "redraw", "vehicle_heatmap",  "error_list", "service_routes")#, "temporarily_blocked")
+    __slots__ = ("type", "biome", "quality", "road", "water", "density", "level", "happiness", "people_inside", "fire_ticks",
+                 "redraw", "vehicle_heatmap", "error_list", "service_routes")  # , "temporarily_blocked")
 
     def __init__(
         self,

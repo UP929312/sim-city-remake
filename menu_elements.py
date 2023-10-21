@@ -1,4 +1,5 @@
 import math
+import sys
 from typing import Any, Callable, Literal, NoReturn
 
 import pygame
@@ -31,7 +32,7 @@ class Element:
     def __str__(self) -> str:
         return f"{self.__class__.__name__} object: ({self.x1}, {self.y1}) width and height: {self.width}, {self.height}, with text `{self.text}`"
 
-    def intersected(self, x: int, y: int):  #  -> "Element" | None    # type: ignore[no-untyped-def]
+    def intersected(self, x: int, y: int):  # -> "Element" | None    # type: ignore[no-untyped-def]
         return self if self.x1 <= x <= self.x1 + self.width and self.y1 <= y <= self.y1 + self.height else None
 
 
@@ -93,7 +94,7 @@ class RowButton(Element):
     def __init__(self, x1: int, y1: int, width: int, height: int, text: str) -> None:
         super().__init__(x1, y1, width, height, text)
         self.text = text  # This is used to detect which button was pressed.
-        self.label = Label(self.text, self.x1, self.y1-2, self.width, self.height, text_colour=(255, 255, 0))
+        self.label = Label(self.text, self.x1, self.y1 - 2, self.width, self.height, text_colour=(255, 255, 0))
 
     def draw(self, window: pygame.surface.Surface) -> None:
         pygame.draw.rect(window, (0, 0, 0), (self.x1, self.y1, self.width, self.height))
@@ -107,11 +108,11 @@ class RowOfButtons(Element):
     """
     Used in the actual game to represent the bottom row
     """
-    def __init__(self, x1: int, y1: int, width: int, height: int, text_items: list[str]) -> None:  #, on_click: Callable[[pygame.surface.Surface, RowButton, int, int], None]) -> None:
+    def __init__(self, x1: int, y1: int, width: int, height: int, text_items: list[str]) -> None:  # , on_click: Callable[[pygame.surface.Surface, RowButton, int, int], None]) -> None:
         super().__init__(x1, y1, width, height, text="")
-        #self.on_click = on_click
+        # self.on_click = on_click
         self.children = [
-            RowButton((x1+(width//len(text_items))*i), y1, width//len(text_items), height, text)
+            RowButton((x1+(width//len(text_items))*i), y1, width // len(text_items), height, text)
             for i, text in enumerate(text_items)
         ]
 
@@ -284,7 +285,7 @@ def handle_collisions(window: pygame.surface.Surface, mouse_x: int, mouse_y: int
 
 def handle_menu(window: pygame.surface.Surface, title: str, elements: list[Button | IconButton | SliderRow]) -> Element:
 
-    title_font_size = font_size_controller(title, 0, window.get_width(), 0, window.get_height() // 5)
+    title_font_size = font_size_controller(title, 0, window.get_width(), 0, window.get_height() // 6)
 
     while True:
         window.fill((0, 0, 0))
@@ -295,6 +296,10 @@ def handle_menu(window: pygame.surface.Surface, title: str, elements: list[Butto
         pygame.display.update()
 
         for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 go_back()
 
