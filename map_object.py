@@ -1,6 +1,6 @@
 import sys
 from random import choice
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Generator, Literal
 
 import numpy as np
 from pathfinding.core.grid import Grid  # type: ignore[import]
@@ -96,9 +96,8 @@ class Map:
         self.tiles[key] = value
 
     def redraw_entire_map(self) -> None:
-        for x in range(self.width):
-            for y in range(self.height):
-                self[x, y].redraw = True
+        for _, _, tile in self.iter():
+            tile.redraw = True
 
     def generate_route(self, start: COORD_TYPE, end: COORD_TYPE) -> list[COORD_TYPE]:
         if (start, end) in self.route_cache:
@@ -108,7 +107,7 @@ class Map:
             return self.route_cache[(start, end)]
         matrix = np.array([
             [(self[x, y].type.name in ROADS or (x, y) in [start, end]) and self[x, y].fire_ticks is None
-             for x in range(self.width)] for y in range(self.height)
+             for (x, y, _) in self.iter()]
         ])
         grid = Grid(matrix=matrix)
         start_node, end_node = grid.node(*start), grid.node(*end)
@@ -117,7 +116,7 @@ class Map:
         return self.route_cache[(start, end)]
 
     def get_all_tiles_by_type(self, tile_type: str) -> list[COORD_TYPE] | None:
-        return [(x, y) for x in range(self.width) for y in range(self.height) if self[x, y].type.name == tile_type and self[x, y].fire_ticks is None] or None
+        return [(x, y) for (x, y, _) in self.iter() if self[x, y].type.name == tile_type and self[x, y].fire_ticks is None] or None
 
     def get_random_tile_by_type(self, tile_type: str) -> COORD_TYPE | None:
         if tile_type == "Spawn":
@@ -142,37 +141,36 @@ class Map:
                 self.update_neighbours(_x, _y)
 
     def update_road_map(self) -> None:
-        for i in range(self.width):
-            for j in range(self.height):
+        for i in range(self.height):
+            for j in range(self.width):
                 self[i, j].road = 1 if self[i, j].type.name in ROADS else 0
         self.update_neighbours(0, self.width // 2)
 
     def check_connected(self) -> None:
         self.update_road_map()
 
-        for x in range(self.width):
-            for y in range(self.height):
-                if not self[x, y].type.need_road:
-                    continue
+        for (x, y, tile) in self.iter():
+            if not tile.type.need_road:
+                continue
 
-                # If at least one of the neighbours is a fully connected road
-                if has_connected_road(self, x, y):
-                    if NO_ROAD in self[x, y].error_list:
-                        self[x, y].error_list.remove(NO_ROAD)
-                    if ROAD_NOT_CONNECTED in self[x, y].error_list:
-                        self[x, y].error_list.remove(ROAD_NOT_CONNECTED)
-                # If at least one of the neighbours is an unconnected road
-                elif has_neighbour_road(self, x, y):
-                    if NO_ROAD in self[x, y].error_list:
-                        self[x, y].error_list.remove(NO_ROAD)
-                    if ROAD_NOT_CONNECTED not in self[x, y].error_list:
-                        self[x, y].error_list.append(ROAD_NOT_CONNECTED)
-                # None of the neighbours are roads at all.
-                else:
-                    if NO_ROAD not in self[x, y].error_list:
-                        self[x, y].error_list.append(NO_ROAD)
-                    if ROAD_NOT_CONNECTED not in self[x, y].error_list:
-                        self[x, y].error_list.append(ROAD_NOT_CONNECTED)
+            # If at least one of the neighbours is a fully connected road
+            if has_connected_road(self, x, y):
+                if NO_ROAD in tile.error_list:
+                    tile.error_list.remove(NO_ROAD)
+                if ROAD_NOT_CONNECTED in tile.error_list:
+                    tile.error_list.remove(ROAD_NOT_CONNECTED)
+            # If at least one of the neighbours is an unconnected road
+            elif has_neighbour_road(self, x, y):
+                if NO_ROAD in tile.error_list:
+                    tile.error_list.remove(NO_ROAD)
+                if ROAD_NOT_CONNECTED not in tile.error_list:
+                    tile.error_list.append(ROAD_NOT_CONNECTED)
+            # None of the neighbours are roads at all.
+            else:
+                if NO_ROAD not in tile.error_list:
+                    tile.error_list.append(NO_ROAD)
+                if ROAD_NOT_CONNECTED not in tile.error_list:
+                    tile.error_list.append(ROAD_NOT_CONNECTED)
 
     def expand(self) -> None:
         # === We need to move the current entry road, we replace it later on
@@ -183,13 +181,17 @@ class Map:
         self.settings["map_width"] += 2
         self.settings["map_height"] += 2
         self.tiles = np.pad(self.tiles, 1, mode="edge")  # type: ignore[call-overload]
-        for x in range(self.width):
-            for y in range(self.height):
-                if x == 0 or y == 0 or x == self.width - 1 or y == self.height - 1:
-                    self[x, y] = Tile()
+        for (x, y, _) in self.iter():
+            if x == 0 or y == 0 or x == self.width - 1 or y == self.height - 1:
+               self[x, y] = Tile()
 
         self[0, self.height//2] = Tile(entry_road, biome=self[0, self.height//2].biome)
         self.redraw_entire_map()
+
+    def iter(self) -> Generator[tuple[int, int, Tile], None, None]:
+        for x in range(self.height):
+            for y in range(self.width):
+                yield x, y, self[x, y]
 
 
 def has_connected_road(map: Map, x: int, y: int) -> bool:

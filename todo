@@ -34,4 +34,5 @@
 
 - flake8 . --ignore=E501,E226,W503,E203,E241,PBP113,E301
 
-- To make non-square grids, we need to swap around a bunch of map_width and map_heights probably
+- To make non-square grids, we need to swap around a bunch of map_width and map_heights probably.
+- Change tree count to density or something
