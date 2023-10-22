@@ -17,6 +17,8 @@ def go_back() -> NoReturn:
 
 # ================================================================================================================================
 def font_size_controller(text: str | int, x1: int, x2: int, y1: int, y2: int) -> int:
+    if not text:
+        return 1
     return int(min((x2 - x1) / math.pow(len(str(text)), 0.8), (y2 - y1) * 0.8))
 
 
@@ -32,7 +34,7 @@ class Element:
     def __str__(self) -> str:
         return f"{self.__class__.__name__} object: ({self.x1}, {self.y1}) width and height: {self.width}, {self.height}, with text `{self.text}`"
 
-    def intersected(self, x: int, y: int):  # -> "Element" | None    # type: ignore[no-untyped-def]
+    def intersected(self, x: int, y: int):  # type: ignore[no-untyped-def]   # -> "Element" | None    
         return self if self.x1 <= x <= self.x1 + self.width and self.y1 <= y <= self.y1 + self.height else None
 
 
@@ -52,7 +54,7 @@ class Label(Element):
 
 
 class Button(Element):
-    def __init__(self, x1: int, y1: int, width: int | float, height: int | float, text: str | None, on_click: Callable) -> None:
+    def __init__(self, x1: int, y1: int, width: int | float, height: int | float, text: str | None, on_click: Callable) -> None:  # type: ignore[type-arg]
         super().__init__(x1, y1, width, height, str(text))
         if text is not None:
             self.label = Label(text, x1, y1, int(width), int(height))
@@ -142,7 +144,7 @@ class ToggleRow(Element):
         for child in (self.name_label, self.toggled_label, self.toggle_button):
             child.draw(window)  # type: ignore[attr-defined]
 
-    def on_click(self, *_) -> Literal["Not None"]:  # type: ignore[no-untyped-def]
+    def on_click(self, *_: Any) -> Literal["Not None"]:
         self.value = not self.value
         self.toggled_label.text = "(Yes)" if self.value else "(No)"
         return "Not None"
@@ -185,7 +187,7 @@ class IntegerSelector(Element):
         for child in self.children:
             child.draw(window)
 
-    def on_click(self, window: pygame.surface.Surface, button: Button, *_: Any) -> Literal["Not None"]:
+    def on_click(self, _: pygame.surface.Surface, button: Button, *_1: Any) -> Literal["Not None"]:
         if button.text == "<<":
             self.value = max(self.value - self.big_step, self.minimum)
         elif button.text == "<":
@@ -269,6 +271,18 @@ class SliderRow(Element):
         self.slider_element.draw(window)
 
 
+class TextEntry(Element):
+    def __init__(self, x1: int, y1: int, width: int, height: int) -> None:
+        super().__init__(x1, y1, width, height, "")
+        self.text = ""
+
+    def draw(self, window: pygame.surface.Surface) -> None:
+        BORDER = int(self.height*0.1)
+        pygame.draw.rect(window, (80, 80, 80), rect=(self.x1, self.y1, self.width, self.height))
+        pygame.draw.rect(window, (0, 0, 0), rect=(self.x1+BORDER, self.y1+BORDER, self.width-BORDER*2, self.height-BORDER*2))
+        Label(self.text, self.x1+BORDER, self.y1-6+BORDER, self.width-BORDER, self.height-BORDER).draw(window)
+
+
 pygame.font.init()
 BACK_BUTTON = Button(0, 0, 64, 64, "<", lambda *_: go_back())
 
@@ -279,12 +293,11 @@ def handle_collisions(window: pygame.surface.Surface, mouse_x: int, mouse_y: int
     for element in [x for x in elements if hasattr(x, "on_click")]:
         clicked_button = element.intersected(mouse_x, mouse_y)
         if clicked_button:
-            result = clicked_button.on_click(window, clicked_button, mouse_x, mouse_y)  # type: ignore[attr-defined]
+            result = clicked_button.on_click(window, clicked_button, mouse_x, mouse_y)  # pyright: ignore
             return result
 
 
 def handle_menu(window: pygame.surface.Surface, title: str, elements: list[Button | IconButton | SliderRow]) -> Element:
-
     title_font_size = font_size_controller(title, 0, window.get_width(), 0, window.get_height() // 6)
 
     while True:

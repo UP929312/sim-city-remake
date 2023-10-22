@@ -10,7 +10,7 @@ import pygame
 if TYPE_CHECKING:
     from map_object import Map
 
-VERSION = (6, 0, 0)
+VERSION = (6, 1, 0)
 
 TILE_WIDTH = 16
 TICK_RATE = 5
@@ -41,8 +41,8 @@ DEFAULT_MAP_SETTINGS: MapSettingsType = {
     "generate_lakes": True,
     "generate_ruins": True,
     "generate_biomes": True,
-    "map_width": 48,  # TODO: Change back to 48
-    "map_height": 48,  # TODO: Change back to 48
+    "map_width": 50,  # TODO: Change back to 48
+    "map_height": 24,  # TODO: Change back to 48
     "starting_cash": STARTING_CASH,
     "residential_tax_rate": 10,
     "commercial_tax_rate": 10,
@@ -67,7 +67,7 @@ def rot_center(image: pygame.surface.Surface, angle: int) -> pygame.surface.Surf
 IMAGES: dict[str, pygame.surface.Surface] = {}
 for image in listdir("images"):
     if image.endswith(".png"):
-        IMAGES[image.removesuffix(".png")] = pygame.image.load("images/" + image)
+        IMAGES[image.removesuffix(".png")] = pygame.image.load("images/" + image)  # TODO: This: .convert_alpha()
 for road_image in listdir("images/roads"):
     for rotation in [0, 90, 180, 270, 360]:
         IMAGES["roads/" + road_image.removesuffix(".png") + f"_rotation_{rotation}"] = rot_center(pygame.image.load("images/roads/" + road_image), rotation)
@@ -149,13 +149,20 @@ def get_class_properties(cls: object) -> list[str]:
     return [i for i in dir(cls) if not i.startswith("_")]
 
 
-def reset_map(window: pygame.surface.Surface, map: Map) -> tuple[int, int]:  # type: ignore[name-defined]
+def reset_map(window: pygame.surface.Surface, map: Map) -> tuple[int, int]:
     map.check_connected()
     window.fill(BACKGROUND_COLOUR, rect=(0, 0, window.get_width()-ICON_SIZE, window.get_height()-ICON_SIZE))
     x_offset = window.get_width() // 2 - (TILE_WIDTH * map.width // 2) - TILE_WIDTH  # Center the world
     y_offset = window.get_height() // 2 - (TILE_WIDTH * map.height // 2) - TILE_WIDTH  # Center the world
     map.redraw_entire_map()
     return x_offset, y_offset
+
+
+def convert_mouse_pos_to_coords(x: int, y: int, x_offset: int, y_offset: int) -> tuple[int, int]:
+    return (x-x_offset) // TILE_WIDTH, (y-y_offset) // TILE_WIDTH
+
+def coords_to_screen_pos(x: int, y: int, x_offset: int, y_offset: int) -> tuple[int, int]:
+    return ((x * TILE_WIDTH)+x_offset, (y * TILE_WIDTH)+y_offset)
 
 # ================================================================================================
 

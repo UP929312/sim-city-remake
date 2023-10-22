@@ -8,11 +8,12 @@ import pygame
 # from need_calculator import calculate_happiness
 # from utils import rot_center)
 from utils import (DESIRED_FPS, ICON_SIZE, IMAGES, TILE_WIDTH,
-                   get_neighbouring_road_string)
+                   coords_to_screen_pos, get_neighbouring_road_string)
 
 COLOUR_TYPE = tuple[int, int, int]
 
 if TYPE_CHECKING:
+    from entities import Person
     from map_object import Map
 
 
@@ -56,24 +57,27 @@ class GenericTile:
     # =============================================================================
     # DRAWING
     def draw(self, window: pygame.surface.Surface, map: Map, x: int, y: int, view: str, old_roads: bool, x_offset: int, y_offset: int) -> None:
-        if not (0 <= x*TILE_WIDTH+x_offset < window.get_width()-ICON_SIZE and 0 <= y*TILE_WIDTH+y_offset < window.get_height()-ICON_SIZE):
+        x_pos, y_pos = pos = coords_to_screen_pos(x, y, x_offset, y_offset)
+        if not (0 <= x_pos < window.get_width()-ICON_SIZE-TILE_WIDTH and 0 <= y_pos < window.get_height()-ICON_SIZE):
             return
         map[x, y].redraw = False
 
         if view == "general_view":
             general_image = self.get_general_view_texture(map, x, y, old_roads)
-            window.blit(general_image, (x * TILE_WIDTH+x_offset, y * TILE_WIDTH+y_offset))
+            window.blit(general_image, pos)
             if map[x, y].fire_ticks is not None:
-                window.blit(IMAGES["fire"].convert_alpha(), (x*TILE_WIDTH + x_offset, y*TILE_WIDTH + y_offset))
+                window.blit(IMAGES["fire"].convert_alpha(), pos)
+            if len(map[x, y].error_list) > 0:
+                window.blit(IMAGES["errorsquare"].convert_alpha(), pos)
             return
         if view == "crazy_view":
             return  # Crazy works by just letting things draw over each other.
 
         func = getattr(self, "draw_" + view)
         tile_colour = func(map[x, y])
-        pygame.draw.rect(window, tile_colour, (x * TILE_WIDTH+x_offset, y * TILE_WIDTH+y_offset, TILE_WIDTH, TILE_WIDTH))
+        pygame.draw.rect(window, tile_colour, pos)
 
-    def get_general_view_texture(self, map: Map, x: int, y: int, old_roads: bool) -> pygame.Surface:
+    def get_general_view_texture(self, *_: Any) -> pygame.Surface:
         return IMAGES[self.general_view_image].convert_alpha()
         # return rot_center(IMAGES[self.general_view_image].convert_alpha(), 0 if not self.random_rotation else 90*((x*1111 + y*3)%4))
 
@@ -200,7 +204,7 @@ class Road(GenericRoad):
         super().on_destroy(map, x, y)
         # Delete all the cached routes that pass through this tile
         for key, route_list in {k: v for k, v in map.route_cache.items()}:  # Copy dictionary
-            if (x, y) in route_list:
+            if (x, y) in route_list:  # type: ignore[comparison-overlap]
                 del map.route_cache[key]  # type: ignore[arg-type]
 
     def on_matrix_destroy(self, map: Map) -> None:
@@ -211,7 +215,7 @@ class Road(GenericRoad):
         super().on_place(map, x, y)
         # Delete all the cached routes that pass through this tile
         for key, route_list in {k: v for k, v in map.route_cache.items()}:  # Copy dictionary
-            if (x, y) in route_list:
+            if (x, y) in route_list:  # type: ignore[comparison-overlap]
                 del map.route_cache[key]  # type: ignore[arg-type]
 
     def on_matrix_place(self, map: Map) -> None:
@@ -539,8 +543,13 @@ def biome_to_tile(biome: float, include_water: bool = False) -> Sand | Dirt | Wa
     """Used by the generator to convert noise to tiles, as well
     as when removing zoning to replace the floor that was there before
     Include water is used for generating without lakes, as well as when
-    removing stuff so water doesn't replace it"""
-    if biome > 0.2:
+    removing stuff so water doesn't replace it
+    0.3->1 = sand
+    0->0.3 = dirt
+    -0.6->0 = water
+    -1->-0.6 = grass
+    """
+    if biome > 0.3:
         return sand
     elif biome > 0:
         return dirt
@@ -566,7 +575,7 @@ class Tile:
         density: int = 0,
         level: int | None = None,
         happiness: int = 5,
-        people_inside: list | None = None,
+        people_inside: list[Person] | None = None,
         fire_ticks: int | None = None,
     ) -> None:
         self.type = tile_type or grass
@@ -577,7 +586,7 @@ class Tile:
         self.density = density
         self.level = level
         self.happiness = happiness
-        self.people_inside: list = people_inside or []
+        self.people_inside: list[Person] = people_inside or []
         self.fire_ticks = fire_ticks
 
         self.redraw = True
@@ -589,7 +598,7 @@ class Tile:
     def __repr__(self) -> str:
         return f"Tile({self.type.name=}, {self.biome=}, {self.quality=}, {self.road=}, {self.water=}, {self.density=}, {self.level=}, {self.happiness=}, {self.people_inside=}, {self.fire_ticks=})"
 
-    def to_dict(self) -> dict[str, str | int | bool | list | None]:
+    def to_dict(self) -> dict[str, str | int | bool | list[Person] | None]:
         return {
             "type": self.type.name,
             "biome": self.biome,

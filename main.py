@@ -7,8 +7,7 @@ import pygame
 from classes import get_type_by_name
 from entities import Pedestrian, Vehicle
 from file_manager import load_preferences
-#from generate_world import generate_world
-from generate_world_2 import generate_world
+from generate_world import generate_world
 # ============================
 from menu import draw_main_menu, draw_pause_menu
 from menu_elements import handle_collisions
@@ -16,6 +15,7 @@ from on_tick import on_tick
 from overlays import generate_bottom_bar, generate_side_bar
 from utils import (BACKGROUND_COLOUR, DESIRED_FPS, ICON_SIZE, IMAGES,
                    TICK_RATE, TILE_WIDTH, VERSION, MapSettingsType,
+                   convert_mouse_pos_to_coords, coords_to_screen_pos,
                    cursor_is_in_world, get_all_grid_coords,
                    get_class_properties, reset_map)
 
@@ -104,15 +104,15 @@ while True:
         if pygame.mouse.get_pressed()[0] and cursor_is_in_world(map, window, mouse_down_tile_x, mouse_down_tile_y):
             assert mouse_down_tile_x is not None and mouse_down_tile_y is not None
             for x, y in get_all_grid_coords(mouse_down_tile_x, mouse_down_tile_y, mouse_motion_tile_x, mouse_motion_tile_y, single_place=draw_style == "single"):
-                window.blit(IMAGES["dragged_square"].convert_alpha(), ((x * TILE_WIDTH)+x_offset, (y * TILE_WIDTH)+y_offset))
+                window.blit(IMAGES["dragged_square"].convert_alpha(), coords_to_screen_pos(x, y, x_offset, y_offset))
                 map[x, y].redraw = True
 
-        window.blit(IMAGES["dragged_square"], ((mouse_motion_tile_x * TILE_WIDTH)+x_offset, (mouse_motion_tile_y * TILE_WIDTH)+y_offset))
+        window.blit(IMAGES["dragged_square"], coords_to_screen_pos(mouse_motion_tile_x, mouse_motion_tile_y, x_offset, y_offset))
         map[mouse_motion_tile_x, mouse_motion_tile_y].redraw = True
         # ---------------------------------------------------------
         # DRAWING - Bottom bar
-        if tool == "select" and len(map[mouse_motion_tile_x, mouse_motion_tile_y].error_list) > 0:  # type: ignore[index]
-            error_text = map[mouse_motion_tile_x, mouse_motion_tile_y].error_list[0]  # type: ignore[index]
+        if tool == "select" and len(map[mouse_motion_tile_x, mouse_motion_tile_y].error_list) > 0:
+            error_text = map[mouse_motion_tile_x, mouse_motion_tile_y].error_list[0]
 
     generate_bottom_bar(window, map, view, run_counter, clock, error_text)
     error_text = ""
@@ -157,8 +157,7 @@ while True:
                 generate_side_bar(tool, draw_style, icon_offset, window, map.settings)
 
             elif event.key == pygame.K_r:
-                if map.width % 4 != 0:  # Only multiples of 4 work
-                    map = generate_world(map_settings=map.settings, seed=randint(1, 100))  # pyright: ignore
+                map = generate_world(map_settings=map.settings, seed=randint(1, 100))  # pyright: ignore
 
             elif event.key == pygame.K_ESCAPE:
                 result = draw_pause_menu(window, map)
@@ -170,7 +169,7 @@ while True:
         # MOUSE DOWN
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_LEFT:  # When they click the button
             mouse_down_x, mouse_down_y = pygame.mouse.get_pos()
-            mouse_down_tile_x, mouse_down_tile_y = (mouse_down_x-x_offset) // TILE_WIDTH, (mouse_down_y-y_offset) // TILE_WIDTH
+            mouse_down_tile_x, mouse_down_tile_y = convert_mouse_pos_to_coords(mouse_down_x, mouse_down_y, x_offset, y_offset)
 
             right_bar_result: None | tuple[str, str, int, MapSettingsType] = handle_collisions(window, mouse_down_x, mouse_down_y, side_bar_elements)  # type: ignore[arg-type]
             if right_bar_result is not None:
@@ -185,36 +184,36 @@ while True:
                 print("main:", str(vehicles[0]))
         # ----------------------------------------------------------
         # MOUSE UP
-        elif event.type == pygame.MOUSEBUTTONUP:  # When they release the mouse button
-            if event.button == pygame.BUTTON_LEFT:
-                mouse_up_x, mouse_up_y = pygame.mouse.get_pos()
-                mouse_up_tile_x, mouse_up_tile_y = (mouse_up_x-x_offset) // TILE_WIDTH, (mouse_up_y-y_offset) // TILE_WIDTH
-                if cursor_is_in_world(map, window, mouse_up_tile_x, mouse_up_tile_y) and cursor_is_in_world(map, window, mouse_down_tile_x, mouse_down_tile_y):
-                    assert mouse_down_tile_x is not None and mouse_down_tile_y is not None
-                    for x, y in get_all_grid_coords(mouse_down_tile_x, mouse_down_tile_y, mouse_up_tile_x, mouse_up_tile_y, single_place=draw_style == "single"):
-                        if tool == "select":
-                            map[x, y].type.on_random_tick(map, x, y)
-                            print(f"main: Tile at {x}, {y}: ---------------")
-                            for prop in get_class_properties(map[x, y]):
-                                print(f"main: {prop}: " + str(getattr(map[x, y], prop)))
-                        elif tool == "destroy":
-                            map[x, y].type.on_destroy(map, x, y)
-                        else:
-                            tile_class = get_type_by_name(tool)
-                            tile_class.on_place(map, x, y)
-                        # -----------------------------------
-                        map[x, y].error_list = []
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == pygame.BUTTON_LEFT:  # When they release the mouse button
+            mouse_up_x, mouse_up_y = pygame.mouse.get_pos()
+            mouse_up_tile_x, mouse_up_tile_y = convert_mouse_pos_to_coords(mouse_up_x, mouse_up_y, x_offset, y_offset)
 
-                    map.check_connected()
-                    map.redraw_entire_map()
+            if cursor_is_in_world(map, window, mouse_up_tile_x, mouse_up_tile_y) and cursor_is_in_world(map, window, mouse_down_tile_x, mouse_down_tile_y):
+                assert mouse_down_tile_x is not None and mouse_down_tile_y is not None
+                for x, y in get_all_grid_coords(mouse_down_tile_x, mouse_down_tile_y, mouse_up_tile_x, mouse_up_tile_y, single_place=draw_style == "single"):
+                    if tool == "select":
+                        map[x, y].type.on_random_tick(map, x, y)
+                        print(f"main: Tile at {x}, {y}: ---------------")
+                        for prop in get_class_properties(map[x, y]):
+                            print(f"main: {prop}: " + str(getattr(map[x, y], prop)))
+                    elif tool == "destroy":
+                        map[x, y].type.on_destroy(map, x, y)
+                    else:
+                        tile_class = get_type_by_name(tool)
+                        tile_class.on_place(map, x, y)
+                    # -----------------------------------
+                    map[x, y].error_list = []
 
+                map.check_connected()
+                map.redraw_entire_map()
+
+        elif event.type == pygame.MOUSEBUTTONUP:  # Cancel dragging
             mouse_up_x, mouse_up_y, mouse_down_x, mouse_down_y = None, None, None, None  # type: ignore[assignment]
-
         # ----------------------------------------------------------
         # MOUSE MOTION
         elif event.type == pygame.MOUSEMOTION:  # This is for writing the error (when the user moves the mouse over an error square)
             mouse_motion_x, mouse_motion_y = pygame.mouse.get_pos()
-            mouse_motion_tile_x, mouse_motion_tile_y = (mouse_motion_x-x_offset) // TILE_WIDTH, (mouse_motion_y-y_offset) // TILE_WIDTH
+            mouse_motion_tile_x, mouse_motion_tile_y = convert_mouse_pos_to_coords(mouse_motion_x, mouse_motion_y, x_offset, y_offset)
 
     # =========================================================
     # ENTITY HANDLING HANDLING
@@ -239,7 +238,7 @@ while True:
                     map[new_pos].vehicle_heatmap = min(map[new_pos].vehicle_heatmap + 2 * DESIRED_FPS, 255)  # Heatmap
 
         # CREATE
-        for _ in range(ENTITIES_TO_CREATE_PER_TICK):  # type: ignore[assignment]
+        for _ in range(ENTITIES_TO_CREATE_PER_TICK):
             if len(entity_list) < preferences["max_" + ("vehicles" if entity_name == "Vehicle" else "people")]:  # type: ignore[literal-required]
                 route_type = choice(["residential", "commercial", "industrial"])
                 entity_type.try_create(entity_type, map, route_type, rainbow_entities_enabled=preferences["rainbow_entities"])  # type: ignore[attr-defined]
@@ -248,7 +247,7 @@ while True:
         run_counter += 1
 
     for i in range(TICK_RATE):
-        x, y = randint(1, map.width - 1), randint(1, map.height - 1)  # Can't remember why I exclude the outer edge
+        x, y = randint(1, map.width - 1), randint(1, map.height - 1)  # Can't remember why I exclude the outer edge, probably some crashing issue
         map[x, y].type.on_random_tick(map, x, y)
 
     pygame.display.update()

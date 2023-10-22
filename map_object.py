@@ -82,6 +82,10 @@ class Map:
     def __repr__(self) -> str:
         return f"Map({self.version}, {self.settings})"
 
+    def print(self) -> None:
+        for y in range(self.width):
+            print([self[x, y].type.name.removesuffix(" Tile").center(6) for x in range(self.height)])
+
     def __getitem__(self, key: tuple[int, int]) -> Tile:  # type: ignore[return]
         try:
             return self.tiles[key]  # type: ignore[no-any-return]
@@ -169,14 +173,6 @@ class Map:
                         self[x, y].error_list.append(NO_ROAD)
                     if ROAD_NOT_CONNECTED not in self[x, y].error_list:
                         self[x, y].error_list.append(ROAD_NOT_CONNECTED)
-
-    def calculate_nearest_services(self) -> None:
-        pass
-        """
-        for service_name, service_list in self.services:
-            for service_coords in service_list:
-                pass
-        """
 
     def expand(self) -> None:
         # === We need to move the current entry road, we replace it later on

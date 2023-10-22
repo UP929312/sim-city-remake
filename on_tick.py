@@ -4,14 +4,9 @@ from typing import TYPE_CHECKING
 
 import pygame
 
-from utils import IMAGES, TILE_WIDTH  # , get_neighbour_coords
-
 if TYPE_CHECKING:
     from file_manager import PreferencesType
     from map_object import Map
-
-# from entities import Vehicle
-
 
 """
 Plan:
@@ -74,11 +69,7 @@ def on_tick(map: Map, window: pygame.surface.Surface, preferences: PreferencesTy
             if tile.redraw:
                 tile.type.draw(window, map, x, y, view, old_roads=preferences["old_roads"], x_offset=x_offset, y_offset=y_offset)
 
-            if view == "general_view" and len(tile.error_list) > 0:
-                window.blit(IMAGES["errorsquare"].convert_alpha(), (x * TILE_WIDTH+x_offset, y * TILE_WIDTH+y_offset))
-                tile.redraw = True
-
-            if run_counter % 4 and tile.vehicle_heatmap > 0:
+            if run_counter % 4 and tile.vehicle_heatmap > 0:  # Only update the heatmap every 4 ticks so it doesn't decrease too quickly.
                 tile.vehicle_heatmap -= 1
                 if view == "heatmap_view":
                     tile.redraw = True
