@@ -27,8 +27,8 @@ def generate_world(map_settings: MapSettingsType = DEFAULT_MAP_SETTINGS, seed: i
     )
     noise = PerlinNoise(octaves=2, seed=seed or map_settings["seed"])
 
-    for x in range(map_width):
-        for y in range(map_height):
+    for x in range(map_height):
+        for y in range(map_width):
             world[x, y].biome = clip(noise([x/map_width, y/map_height]) * 3, -1, 1)
             if map_settings["generate_biomes"]:
                 world[x, y].type = biome_to_tile(world[x, y].biome, include_water=map_settings["generate_lakes"])
@@ -41,15 +41,15 @@ def generate_world(map_settings: MapSettingsType = DEFAULT_MAP_SETTINGS, seed: i
     # ==================================================================
     # Generate water map
     for _ in range(10):  # 10x smoothing
-        for x in range(map_width):
-            for y in range(map_height):
+        for x in range(map_height):
+            for y in range(map_width):
                 neighbours = get_neighbour_coords(map_width, map_height, x, y)
                 total = sum(world[_x, _y].water for (_x, _y) in neighbours)  # Won't always have 4 neighbours
                 world[x, y].water = int(clip(num=total / len(neighbours), minimum=0, maximum=255))
     # ==================================================================
     # Tree generation
     for _ in range(map_settings["trees"]):
-        x, y = randint(0, map_width - 1), randint(0, map_height - 1)
+        x, y = randint(0, map_height - 1), randint(0, map_width - 1)
         # Now get the right type of tree, e.g. shrub, weeds, etc
         floor_name = world[x, y].type.name
         if floor_name in FLOORING_TO_PLANT:
@@ -57,7 +57,7 @@ def generate_world(map_settings: MapSettingsType = DEFAULT_MAP_SETTINGS, seed: i
 
     if map_settings["generate_ruins"]:
         for _ in range(15):
-            x, y = randint(0, map_width - 1), randint(0, map_height - 1)
+            x, y = randint(0, map_height - 1), randint(0, map_width - 1)
             if world[x, y].type.name not in ["Water", "LilyPad"]:
                 world[x, y].type = abandoned_tile
 

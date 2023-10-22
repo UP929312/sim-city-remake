@@ -36,3 +36,4 @@
 
 - To make non-square grids, we need to swap around a bunch of map_width and map_heights probably.
 - Change tree count to density or something
+- The rectangle worlds are kind of working (looking forward to ribbon worlds tbh), just lots of errors to do with x and ys the wrong way round.

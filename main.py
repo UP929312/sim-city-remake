@@ -247,7 +247,7 @@ while True:
         run_counter += 1
 
     for i in range(TICK_RATE):
-        x, y = randint(1, map.width - 1), randint(1, map.height - 1)  # Can't remember why I exclude the outer edge, probably some crashing issue
+        x, y = randint(1, map.height - 1), randint(1, map.width - 1)  # Can't remember why I exclude the outer edge, probably some crashing issue
         map[x, y].type.on_random_tick(map, x, y)
 
     pygame.display.update()

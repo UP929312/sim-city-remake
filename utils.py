@@ -18,6 +18,7 @@ DESIRED_FPS = 30
 
 ICON_SIZE = 32
 BACKGROUND_COLOUR = (40, 40, 40)
+NEIGHBOURS = [(0, -1), (1, 0), (0, 1), (-1, 0)]
 
 
 class MapSettingsType(TypedDict):
@@ -41,7 +42,7 @@ DEFAULT_MAP_SETTINGS: MapSettingsType = {
     "generate_lakes": True,
     "generate_ruins": True,
     "generate_biomes": True,
-    "map_width": 50,  # TODO: Change back to 48
+    "map_width": 24,  # TODO: Change back to 48
     "map_height": 24,  # TODO: Change back to 48
     "starting_cash": STARTING_CASH,
     "residential_tax_rate": 10,
@@ -99,13 +100,10 @@ def clip(num: int | float, minimum: int, maximum: int) -> int:
     return min(max(num, minimum), maximum)  # type: ignore[return-value]
 
 
-NEIGHBOURS = [(0, -1), (1, 0), (0, 1), (-1, 0)]
-
-
 def get_neighbour_coords(map_width: int, map_height: int, x: int, y: int, include_void_tiles: bool = False) -> list[tuple[int, int] | tuple[int, int]]:
     neighbours: list[tuple[int, int] | tuple[int, int]] = []
     for x_neigh, y_neigh in NEIGHBOURS:
-        if 0 <= x + x_neigh < map_width and 0 <= y + y_neigh < map_height:
+        if 0 <= x + x_neigh < map_height and 0 <= y + y_neigh < map_width:
             neighbours.append((x + x_neigh, y + y_neigh))
         elif include_void_tiles:
             neighbours.append((None, None))  # type: ignore[arg-type]
@@ -162,7 +160,7 @@ def convert_mouse_pos_to_coords(x: int, y: int, x_offset: int, y_offset: int) ->
     return (x-x_offset) // TILE_WIDTH, (y-y_offset) // TILE_WIDTH
 
 def coords_to_screen_pos(x: int, y: int, x_offset: int, y_offset: int) -> tuple[int, int]:
-    return ((x * TILE_WIDTH)+x_offset, (y * TILE_WIDTH)+y_offset)
+    return ((x * TILE_WIDTH)+x_offset, (y * TILE_WIDTH)+y_offset)  #[::-1]  # type: ignore[abc]
 
 # ================================================================================================
 
