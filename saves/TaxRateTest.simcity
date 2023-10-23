@@ -27753,7 +27753,6 @@
     ],
     "settings": {
         "seed": 500,
-        "trees": 500,
         "generate_lakes": true,
         "generate_ruins": true,
         "generate_biomes": true,
@@ -27762,6 +27761,7 @@
         "starting_cash": 25000,
         "residential_tax_rate": 10,
         "commercial_tax_rate": 13,
-        "industrial_tax_rate": 10
+        "industrial_tax_rate": 10,
+        "tree_density": 20
     }
 }
