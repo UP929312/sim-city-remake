@@ -23,7 +23,7 @@ NEIGHBOURS = [(0, -1), (1, 0), (0, 1), (-1, 0)]
 
 class MapSettingsType(TypedDict):
     seed: int
-    trees: int
+    tree_density: int
     generate_lakes: bool
     generate_ruins: bool
     generate_biomes: bool
@@ -38,12 +38,12 @@ class MapSettingsType(TypedDict):
 STARTING_CASH = 50000
 DEFAULT_MAP_SETTINGS: MapSettingsType = {
     "seed": random.randint(1, 100),
-    "trees": 500,
+    "tree_density": 25,
     "generate_lakes": True,
     "generate_ruins": True,
     "generate_biomes": True,
-    "map_width": 24,  # TODO: Change back to 48
-    "map_height": 24,  # TODO: Change back to 48
+    "map_width": 48,  # TODO: Change back to 48
+    "map_height": 48,  # TODO: Change back to 48
     "starting_cash": STARTING_CASH,
     "residential_tax_rate": 10,
     "commercial_tax_rate": 10,
@@ -83,16 +83,16 @@ def get_random_name() -> str:
     return choice(people_names)
 
 
-def cursor_is_in_world(map: Map, window: pygame.surface.Surface, mouse_x: int | None, mouse_y: int | None, is_tile: bool = True) -> bool:
+def cursor_is_in_world(map: Map, window: pygame.surface.Surface, mouse_tile_x: int | None, mouse_tile_y: int | None) -> bool:
     return (
-        mouse_x is not None
-        and mouse_y is not None
-        and mouse_x // (1 if is_tile else 16) < map.width
-        and mouse_y // (1 if is_tile else 16) < map.height
-        and mouse_x >= 0
-        and mouse_y >= 0
-        and mouse_x < window.get_width() - ICON_SIZE
-        and mouse_y < window.get_height() - ICON_SIZE
+        mouse_tile_x is not None
+        and mouse_tile_y is not None
+        and mouse_tile_x < map.width
+        and mouse_tile_y < map.height
+        and mouse_tile_x >= 0
+        and mouse_tile_y >= 0
+        and mouse_tile_x < window.get_height() - ICON_SIZE  # Need offset and stuff
+        and mouse_tile_y < window.get_width() - ICON_SIZE  # Need offset and stuff
     )
 
 
@@ -159,24 +159,8 @@ def reset_map(window: pygame.surface.Surface, map: Map) -> tuple[int, int]:
 def convert_mouse_pos_to_coords(x: int, y: int, x_offset: int, y_offset: int) -> tuple[int, int]:
     return (x-x_offset) // TILE_WIDTH, (y-y_offset) // TILE_WIDTH
 
+
 def coords_to_screen_pos(x: int, y: int, x_offset: int, y_offset: int) -> tuple[int, int]:
-    return ((x * TILE_WIDTH)+x_offset, (y * TILE_WIDTH)+y_offset)  #[::-1]  # type: ignore[abc]
-
-# ================================================================================================
-
-
-def centered_text(window: pygame.surface.Surface, font_size: int, text: str | int, text_colour: tuple[int, int, int], x: int, y: int) -> None:
-    font = pygame.font.SysFont("Comic Sans MS", font_size)
-    text_rendered = font.render(str(text), False, text_colour)
-    text_rect = text_rendered.get_rect(center=(x, y))
-    window.blit(text_rendered, text_rect)
-
-
-def outline(window: pygame.surface.Surface, min_x: int, min_y: int, size: int = ICON_SIZE) -> None:
-    pygame.draw.rect(window, (255, 255, 255), (min_x, min_y, size, 1))  # Top
-    pygame.draw.rect(window, (255, 255, 255), (min_x, min_y, 1, size))  # Left
-    pygame.draw.rect(window, (255, 255, 255), (min_x + size, min_y, 1, size))  # Right
-    pygame.draw.rect(window, (255, 255, 255), (min_x, min_y + size, size, 1))  # Bottom
-
+    return ((x * TILE_WIDTH)+x_offset, (y * TILE_WIDTH)+y_offset)  # [::-1]  # type: ignore[abc]
 
 # ================================================================================================

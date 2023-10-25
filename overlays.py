@@ -64,7 +64,7 @@ def generate_side_bar(tool: str, draw_style: str, icon_offset: int, window: pyga
         dynamic_buttons.append(button)
 
     for element in static_buttons + dynamic_buttons:
-        element.draw(window)
+        element.draw(window, 0)
 
     return static_buttons + dynamic_buttons
 
@@ -72,10 +72,10 @@ def generate_side_bar(tool: str, draw_style: str, icon_offset: int, window: pyga
 def generate_bottom_bar(window: pygame.surface.Surface, map: Map, view: str, run_counter: int, clock: pygame.time.Clock, error_text: str) -> RowOfButtons:
     row_of_buttons = RowOfButtons(0, window.get_height() - ICON_SIZE, window.get_width()-ICON_SIZE, ICON_SIZE,
         [
-        f"Cash: {map.cash}", view.removesuffix("_view").capitalize(),
-        f"FPS: {int(clock.get_fps())}, Vehics: {len(map.entity_lists['Vehicle'])}",
-        str(run_counter)
+            f"Cash: {map.cash}", view.removesuffix("_view").capitalize(),
+            f"FPS: {int(clock.get_fps())}, Vehics: {len(map.entity_lists['Vehicle'])}",
+            str(run_counter)
         ] + ([error_text] if error_text else [])
     )
-    row_of_buttons.draw(window)
+    row_of_buttons.draw(window, 0)
     return row_of_buttons

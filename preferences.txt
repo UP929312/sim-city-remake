@@ -1,1 +1,1 @@
-{"max_vehicles": 100, "max_people": 500, "rainbow_entities": true, "old_roads": false, "max_pedestrian": 0}
+{"max_vehicles": 100, "max_people": 0, "rainbow_entities": true, "old_roads": false, "max_pedestrian": 0}

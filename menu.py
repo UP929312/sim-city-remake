@@ -8,10 +8,10 @@ from file_manager import (PreferencesType, load_game, load_preferences,
                           save_game, save_preferences)
 from generate_world import generate_world
 from map_object import Map
-from menu_elements import (BACK_BUTTON, Button, GoBack, IntegerSelector,
+from menu_elements import (BACK_BUTTON, Button, GoBack, IntegerSelector, Label,
                            SliderRow, TextEntry, ToggleRow, go_back,
                            handle_menu)
-from utils import DEFAULT_MAP_SETTINGS, MapSettingsType, centered_text
+from utils import DEFAULT_MAP_SETTINGS, MapSettingsType
 
 
 def margins(window: pygame.Surface) -> tuple[int, int, int, int]:
@@ -29,7 +29,7 @@ def load_game_menu(window: pygame.surface.Surface, *_: Any) -> str:
     element_width, top_margin, left_margin, right_margin = margins(window)
 
     def generate_save_slice(offset: int) -> tuple[tuple[Button, ...], int]:
-        save_names = [file for file in listdir("saves") if file.endswith(".simcity")]
+        save_names = [file for file in sorted(listdir("saves")) if file.endswith(".simcity")]
         save_buttons = [
             Button(left_margin - 32, top_margin + i * 110, element_width, button_height, save_name, lambda window, button, *_: button.text)
             for i, save_name in enumerate(save_names[offset : offset + 5])
@@ -38,6 +38,7 @@ def load_game_menu(window: pygame.surface.Surface, *_: Any) -> str:
 
     offset = 0
     while True:
+        # Purposefully doesn't catch GoBack so that the parent menu can catch it.
         save_buttons, num_of_saves = generate_save_slice(offset)  # Recalculate the offsetted saves each update
         elements = [BACK_BUTTON, *save_buttons]
         if num_of_saves > 5:
@@ -45,7 +46,7 @@ def load_game_menu(window: pygame.surface.Surface, *_: Any) -> str:
             elements.append(Button(right_margin, top_margin + (110 * 4), button_height, button_height, "V", lambda *_: min(offset + 1, num_of_saves - 5)))
 
         result = handle_menu(window, "Saves:", elements)  # type: ignore[arg-type]
-        if isinstance(result, int):  # Result can either be whichever level they selected, or the new offset - to scroll
+        if isinstance(result, int):  # Changing the offset
             offset = result
         elif result is not None:  # Level seleted
             return result  # type: ignore[return-value]
@@ -61,19 +62,21 @@ def world_settings_menu(window: pygame.surface.Surface, *_: Any) -> MapSettingsT
         ToggleRow(left_margin, top_margin + 0, element_width, 64, "Generate Lakes", "generate_lakes", map_settings["generate_lakes"]),
         ToggleRow(left_margin, top_margin + 64, element_width, 64, "Generate Ruins", "generate_ruins", map_settings["generate_ruins"]),
         ToggleRow(left_margin, top_margin + 128, element_width, 64, "Generate Biomes", "generate_biomes", map_settings["generate_biomes"]),
-        IntegerSelector(left_margin, top_margin + 200, element_width, 128, "Trees", "trees", map_settings["trees"], minimum=0, maximum=1000),
+        IntegerSelector(left_margin, top_margin + 200, element_width, 128, "Tree Density", "tree_density", map_settings["tree_density"],
+                        minimum=0, maximum=100, small_step=1, big_step=10, middle=50),
         IntegerSelector(left_margin, top_margin + 328, element_width, 128, "Starting cash", "starting_cash", map_settings["starting_cash"],  # fmt: skip
                         minimum=500, maximum=100_000, big_step=10000, small_step=1000, middle=50000),  # fmt: skip
-        IntegerSelector(left_margin, top_margin + 456, element_width, 128, "Map Size", "map_width", map_settings["map_width"], minimum=24,
+        IntegerSelector(left_margin, top_margin + 456, element_width, 128, "Map Width", "map_width", map_settings["map_width"], minimum=12,
                         maximum=96, small_step=1, big_step=10, middle=48),  # fmt: skip
-        Button(left_margin, window.get_height() - (top_margin // 2), element_width, 64, "Start", lambda *_: "New game"),
+        IntegerSelector(left_margin, top_margin + 584, element_width, 128, "Map Height", "map_height", map_settings["map_height"], minimum=12,
+                        maximum=96, small_step=1, big_step=10, middle=48),  # fmt: skip
+        Button(left_margin, top_margin + 776, element_width, 64, "Start", lambda *_: "New game"),
     ]
 
     while True:
-        result = handle_menu(window, "World", elements)  # type: ignore[arg-type]
-        if result not in [None, "Not None"]:  # type: ignore[comparison-overlap]
+        if handle_menu(window, "World", elements) not in [None, "Not None"]:  # type: ignore[comparison-overlap, arg-type]
             new_map_settings: MapSettingsType = map_settings | {x.key: x.value for x in elements if hasattr(x, "key")}  # type: ignore[union-attr, assignment]
-            #new_map_settings["map_height"] = new_map_settings["map_width"]
+            # new_map_settings["map_height"] = new_map_settings["map_width"]
             return new_map_settings
 
 
@@ -90,9 +93,10 @@ def settings_menu(window: pygame.surface.Surface, *_: Any) -> NoReturn:
     ]
 
     while True:
+        # Purposefully doesn't catch GoBack so that the parent menu can catch it.
         handle_menu(window, "Settings", elements)  # type: ignore[arg-type]
-        prefs: PreferencesType = prefs | {x.key: x.value for x in elements if hasattr(x, "key")}  # type: ignore[union-attr, no-redef]
-        save_preferences(prefs)
+        new_prefs: PreferencesType = prefs | {x.key: x.value for x in elements if hasattr(x, "key")}  # type: ignore[union-attr, no-redef, assignment]
+        save_preferences(new_prefs)
 
 
 # ================================================================================================================================
@@ -111,7 +115,8 @@ def draw_main_menu(window: pygame.surface.Surface, *_: Any) -> Map:
         try:
             result = handle_menu(window, "Main Menu", elements)  # type: ignore[arg-type]
         except GoBack:
-            pass  # This forces the next iteration of the while True loop, going back to the main menu
+            pass  # This forces the next iteration of the while True loop, going back to the main menu,
+            # Basically, we break out the while loop in the handle_menu's submenu to get back here
         else:
             if result is not None:  # result will be dict of map settings or a save name
                 if isinstance(result, dict):
@@ -122,6 +127,9 @@ def draw_main_menu(window: pygame.surface.Surface, *_: Any) -> Map:
 
 # ===============================================================================================================================
 def save_world_window(window: pygame.surface.Surface, world: Map, *_: Any) -> str | None:
+    """
+    Returns None for nothing, or a string for the world name
+    """
     element_width, _, left_margin, _ = margins(window)  # type: ignore[assignment]
     text = ""
     text_entry = TextEntry(left_margin, 320, element_width, 64)
@@ -148,8 +156,8 @@ def save_world_window(window: pygame.surface.Surface, world: Map, *_: Any) -> st
                     text += event.unicode
 
             text_entry.text = text
-            text_entry.draw(window)
-            centered_text(window, 60, "Save World", (255, 255, 255), window.get_width() // 2, 80)  # TODO: Fix this
+            text_entry.draw(window, 0)
+            Label("Save World", 0, 0, window.get_width(), window.get_height()//6).draw(window, 0)
             pygame.display.update()
 
 

@@ -11,7 +11,6 @@ from generate_world import generate_world
 # ============================
 from menu import draw_main_menu, draw_pause_menu
 from menu_elements import handle_collisions
-from on_tick import on_tick
 from overlays import generate_bottom_bar, generate_side_bar
 from utils import (BACKGROUND_COLOUR, DESIRED_FPS, ICON_SIZE, IMAGES,
                    TICK_RATE, TILE_WIDTH, VERSION, MapSettingsType,
@@ -94,12 +93,22 @@ while True:
         mouse_motion_x, mouse_motion_y = None, None
         mouse_motion_tile_x, mouse_motion_tile_y = None, None
     # =========================================================
-    # DRAWING - MAP | Emergency services | fire and more
-    on_tick(map, window, preferences, view, run_counter, x_offset, y_offset)
+    # DRAWING - MAP
+    for (x, y, tile) in map.iter():
+        if tile.redraw:
+            tile.type.draw(window, map, x, y, view, old_roads=preferences["old_roads"], x_offset=x_offset, y_offset=y_offset)
+
+        if run_counter % 4 and tile.vehicle_heatmap > 0:  # Only update the heatmap every 4 ticks so it doesn't decrease too quickly.
+            tile.vehicle_heatmap -= 1
+            if view == "heatmap_view":
+                tile.redraw = True
+
+        if tile.fire_ticks is not None:
+            tile.redraw = True
+            tile.fire_ticks += 1
     # ---------------------------------------------------------
     if cursor_is_in_world(map, window, mouse_motion_tile_x, mouse_motion_tile_y):
         assert mouse_motion_tile_x is not None and mouse_motion_tile_y is not None
-
         # GENERATE DRAG GRID
         if pygame.mouse.get_pressed()[0] and cursor_is_in_world(map, window, mouse_down_tile_x, mouse_down_tile_y):
             assert mouse_down_tile_x is not None and mouse_down_tile_y is not None
@@ -114,8 +123,6 @@ while True:
         if tool == "select" and len(map[mouse_motion_tile_x, mouse_motion_tile_y].error_list) > 0:
             error_text = map[mouse_motion_tile_x, mouse_motion_tile_y].error_list[0]
 
-    generate_bottom_bar(window, map, view, run_counter, clock, error_text)
-    error_text = ""
     # DRAWING - Side bar only happens on update
     # =========================================================
     # CONTROLS
@@ -165,13 +172,14 @@ while True:
                     map = result
                 preferences = load_preferences()
                 x_offset, y_offset = reset_map(window, map)
+                generate_side_bar(tool, draw_style, icon_offset, window, map.settings)
         # ----------------------------------------------------------
         # MOUSE DOWN
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_LEFT:  # When they click the button
             mouse_down_x, mouse_down_y = pygame.mouse.get_pos()
             mouse_down_tile_x, mouse_down_tile_y = convert_mouse_pos_to_coords(mouse_down_x, mouse_down_y, x_offset, y_offset)
 
-            right_bar_result: None | tuple[str, str, int, MapSettingsType] = handle_collisions(window, mouse_down_x, mouse_down_y, side_bar_elements)  # type: ignore[arg-type]
+            right_bar_result: None | tuple[str, str, int, MapSettingsType] = handle_collisions(window, mouse_down_x, mouse_down_y, side_bar_elements, 0)  # type: ignore[arg-type]
             if right_bar_result is not None:
                 tool, draw_style, icon_offset, new_settings = right_bar_result
                 map.settings: MapSettingsType = map.settings | new_settings  # type: ignore[misc]
@@ -243,6 +251,9 @@ while True:
                 route_type = choice(["residential", "commercial", "industrial"])
                 entity_type.try_create(entity_type, map, route_type, rainbow_entities_enabled=preferences["rainbow_entities"])  # type: ignore[attr-defined]
     # =========================================================
+    generate_bottom_bar(window, map, view, run_counter, clock, error_text)
+    error_text = ""
+
     if not pause:
         run_counter += 1
 

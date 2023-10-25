@@ -42,8 +42,8 @@ def migrate_worlds() -> None:
         print(save)
         map = load_game(save)
 
-        #for (x, y, tile) in map.iter():
-        #   #old_tile = map[x, y]
+        # for (x, y, tile) in map.iter():
+        #   # old_tile = map[x, y]
 
         # map.version = VERSION
         save_game(map, save)

@@ -68,10 +68,10 @@ class Entity:
         self.current_loc = start
         self.x_offset, self.y_offset = 5, 1  # We start the entities in the middle of the tile
         self.path = map.generate_route(start, end) if route is None else route
-        # print("#"*10, "path_length", len(self.path))
+        # rint("#"*10, "path_length", len(self.path))
         if not (5 <= len(self.path) < self.max_path_length) and enforce_minimum_distance:  # type: ignore[attr-defined]
             # If the path is too short, or too long, delete the entity
-            # print("Deleting because of minimum or maximum distance")
+            # rint("Deleting because of minimum or maximum distance")
             raise DeleteEntity
 
     def __str__(self) -> str:
@@ -82,7 +82,7 @@ class Entity:
         start, end = create_route(map, route_type)
         if start is None or end is None:
             return
-        # print(f"Creating {class_type.__name__} from {start} to {end}")
+        # rint(f"Creating {class_type.__name__} from {start} to {end}")
         try:
             new_entity: Vehicle | Pedestrian = class_type(route_type, map, start, end, rainbow=rainbow_entities_enabled, enforce_minimum_distance=True)
         except DeleteEntity:

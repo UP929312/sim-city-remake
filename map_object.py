@@ -91,6 +91,7 @@ class Map:
             return self.tiles[key]  # type: ignore[no-any-return]
         except IndexError:
             print("ERROR", key)
+            # return Tile()
 
     def __setitem__(self, key: tuple[int, int], value: Tile) -> None:
         self.tiles[key] = value
@@ -141,9 +142,8 @@ class Map:
                 self.update_neighbours(_x, _y)
 
     def update_road_map(self) -> None:
-        for i in range(self.height):
-            for j in range(self.width):
-                self[i, j].road = 1 if self[i, j].type.name in ROADS else 0
+        for x, y, tile in self.iter():
+            self[x, y].road = 1 if tile.type.name in ROADS else 0
         self.update_neighbours(0, self.width // 2)
 
     def check_connected(self) -> None:
@@ -183,7 +183,7 @@ class Map:
         self.tiles = np.pad(self.tiles, 1, mode="edge")  # type: ignore[call-overload]
         for (x, y, _) in self.iter():
             if x == 0 or y == 0 or x == self.width - 1 or y == self.height - 1:
-               self[x, y] = Tile()
+                self[x, y] = Tile()
 
         self[0, self.height//2] = Tile(entry_road, biome=self[0, self.height//2].biome)
         self.redraw_entire_map()
@@ -192,6 +192,7 @@ class Map:
         for x in range(self.height):
             for y in range(self.width):
                 yield x, y, self[x, y]
+                # yield y, x, self[y, x]
 
 
 def has_connected_road(map: Map, x: int, y: int) -> bool:

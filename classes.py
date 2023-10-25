@@ -75,9 +75,9 @@ class GenericTile:
 
         func = getattr(self, "draw_" + view)
         tile_colour = func(map[x, y])
-        pygame.draw.rect(window, tile_colour, pos)
+        pygame.draw.rect(window, tile_colour, (*pos, TILE_WIDTH, TILE_WIDTH))
 
-    def get_general_view_texture(self, *_: Any) -> pygame.Surface:
+    def get_general_view_texture(self, map: Map, x: int, y: int, old_roads: bool) -> pygame.Surface:  # Leave types for typing.
         return IMAGES[self.general_view_image].convert_alpha()
         # return rot_center(IMAGES[self.general_view_image].convert_alpha(), 0 if not self.random_rotation else 90*((x*1111 + y*3)%4))
 
@@ -142,10 +142,10 @@ class GenericTile:
             return print("classes:", f"Cannot afford a {self.name}, it costs {self.cost}")
 
         if not place_on_type.can_place_on:
-            return  # print("classes:", f"Cannot place {self.name} on {place_on_type.name}")
+            return  # rint("classes:", f"Cannot place {self.name} on {place_on_type.name}")
 
         if place_on_type.name == self.name:
-            return  # print("classes:", f"The tile there is already a {self.name}")
+            return  # rint("classes:", f"The tile there is already a {self.name}")
 
         assert self.cost is not None
         map.cash -= self.cost
@@ -158,10 +158,10 @@ class GenericTile:
     # DESTROYING
     def on_destroy(self, map: Map, x: int, y: int) -> None:
         if self.cost_to_remove is None:
-            return  # print("classes:", f"{map[x, z].type.name} can't be removed")
+            return  # rint("classes:", f"{map[x, z].type.name} can't be removed")
 
         if map.cash < self.cost_to_remove:
-            return  # print("classes:", f"Not enough money to remove {map[x, z].type.name}")
+            return  # rint("classes:", f"Not enough money to remove {map[x, z].type.name}")
 
         map.cash -= self.cost_to_remove
         map[x, y].type = biome_to_tile(map[x, y].biome)
@@ -295,16 +295,16 @@ class GenericZonedBuilding(GenericTile):  # ################################
         return (10, 25 * happiness, 10)
 
     def on_random_tick(self, map: Map, x: int, y: int) -> None:
-        # print(f"Random tick for {self.__class__.__name__}")
+        # rint(f"Random tick for {self.__class__.__name__}")
         """
         for service_type in ["FireStation", ]:
             all_tiles = map.get_all_tiles_by_type(service_type)
-            #print(all_tiles)
+            #rint(all_tiles)
             if all_tiles:
-                print("Found all the tiles")
+                rint("Found all the tiles")
                 shortest_route = min([map.generate_route((x, y), tile) for tile in all_tiles], key=lambda x: len(x))
                 if shortest_route:
-                    print("New shortest route)")
+                    rint("New shortest route)")
                     map[x, y].service_routes[service_type] = shortest_route
         #"""
         # map[x, y].happiness = calculate_happiness(map, x, y)
@@ -399,11 +399,11 @@ class Dirt(GenericTile):
     def on_place(self, map: Map, x: int, y: int) -> None:
         place_on_type: GenericTile = map[x, y].type
         if place_on_type.name not in ["Water", "LilyPad"]:
-            return  # print("build:", "Can only place dirt on water or lily pads!")
+            return  # rint("build:", "Can only place dirt on water or lily pads!")
 
         # The cost will always be an int here
         if map.cash < self.cost:  # type: ignore[operator]
-            return  # print("build:", "Not enough money to fill in water")
+            return  # rint("build:", "Not enough money to fill in water")
 
         # The cost will always be an int here
         map.cash -= self.cost  # type: ignore[operator]
@@ -539,7 +539,7 @@ def get_type_by_name(name: str) -> GenericTile:  # type: ignore[return]
     print(f"classes: DEBUG: COULD NOT FIND {name}")
 
 
-def biome_to_tile(biome: float, include_water: bool = False) -> Sand | Dirt | Water | Grass | Gravel:
+def biome_to_tile(biome: float, include_water: bool = False, even_generate: bool = True) -> Sand | Dirt | Water | Grass | Gravel:
     """Used by the generator to convert noise to tiles, as well
     as when removing zoning to replace the floor that was there before
     Include water is used for generating without lakes, as well as when
@@ -548,7 +548,11 @@ def biome_to_tile(biome: float, include_water: bool = False) -> Sand | Dirt | Wa
     0->0.3 = dirt
     -0.6->0 = water
     -1->-0.6 = grass
+
+    If even_generate is set to False, it won't actually generate, and will just return grass.
     """
+    if not even_generate:
+        return grass
     if biome > 0.3:
         return sand
     elif biome > 0:
