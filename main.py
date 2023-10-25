@@ -15,8 +15,8 @@ from overlays import generate_bottom_bar, generate_side_bar
 from utils import (BACKGROUND_COLOUR, DESIRED_FPS, ICON_SIZE, IMAGES,
                    TICK_RATE, TILE_WIDTH, VERSION, MapSettingsType,
                    convert_mouse_pos_to_coords, coords_to_screen_pos,
-                   cursor_is_in_world, get_all_grid_coords,
-                   get_class_properties, reset_map)
+                   get_all_grid_coords, get_class_properties, reset_map,
+                   tile_is_in_world)
 
 # https://www.freepik.com/search?format=search&query=fire%20station%20icon%20pixel%20art
 print("main: Starting")
@@ -107,10 +107,10 @@ while True:
             tile.redraw = True
             tile.fire_ticks += 1
     # ---------------------------------------------------------
-    if cursor_is_in_world(map, window, mouse_motion_tile_x, mouse_motion_tile_y):
+    if tile_is_in_world(map, window, mouse_motion_tile_x, mouse_motion_tile_y):
         assert mouse_motion_tile_x is not None and mouse_motion_tile_y is not None
         # GENERATE DRAG GRID
-        if pygame.mouse.get_pressed()[0] and cursor_is_in_world(map, window, mouse_down_tile_x, mouse_down_tile_y):
+        if pygame.mouse.get_pressed()[0] and tile_is_in_world(map, window, mouse_down_tile_x, mouse_down_tile_y):
             assert mouse_down_tile_x is not None and mouse_down_tile_y is not None
             for x, y in get_all_grid_coords(mouse_down_tile_x, mouse_down_tile_y, mouse_motion_tile_x, mouse_motion_tile_y, single_place=draw_style == "single"):
                 window.blit(IMAGES["dragged_square"].convert_alpha(), coords_to_screen_pos(x, y, x_offset, y_offset))
@@ -196,7 +196,7 @@ while True:
             mouse_up_x, mouse_up_y = pygame.mouse.get_pos()
             mouse_up_tile_x, mouse_up_tile_y = convert_mouse_pos_to_coords(mouse_up_x, mouse_up_y, x_offset, y_offset)
 
-            if cursor_is_in_world(map, window, mouse_up_tile_x, mouse_up_tile_y) and cursor_is_in_world(map, window, mouse_down_tile_x, mouse_down_tile_y):
+            if tile_is_in_world(map, window, mouse_up_tile_x, mouse_up_tile_y) and tile_is_in_world(map, window, mouse_down_tile_x, mouse_down_tile_y):
                 assert mouse_down_tile_x is not None and mouse_down_tile_y is not None
                 for x, y in get_all_grid_coords(mouse_down_tile_x, mouse_down_tile_y, mouse_up_tile_x, mouse_up_tile_y, single_place=draw_style == "single"):
                     if tool == "select":
@@ -258,7 +258,7 @@ while True:
         run_counter += 1
 
     for i in range(TICK_RATE):
-        x, y = randint(1, map.height - 1), randint(1, map.width - 1)  # Can't remember why I exclude the outer edge, probably some crashing issue
+        x, y = randint(1, map.width - 1), randint(1, map.height - 1)  # Can't remember why I exclude the outer edge, probably some crashing issue
         map[x, y].type.on_random_tick(map, x, y)
 
     pygame.display.update()

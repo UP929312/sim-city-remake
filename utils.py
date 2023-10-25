@@ -10,7 +10,7 @@ import pygame
 if TYPE_CHECKING:
     from map_object import Map
 
-VERSION = (6, 1, 0)
+VERSION = (7, 0, 0)
 
 TILE_WIDTH = 16
 TICK_RATE = 5
@@ -42,8 +42,8 @@ DEFAULT_MAP_SETTINGS: MapSettingsType = {
     "generate_lakes": True,
     "generate_ruins": True,
     "generate_biomes": True,
-    "map_width": 48,  # TODO: Change back to 48
-    "map_height": 48,  # TODO: Change back to 48
+    "map_width": 64,  # TODO: Change back to 48
+    "map_height": 16,  # TODO: Change back to 48
     "starting_cash": STARTING_CASH,
     "residential_tax_rate": 10,
     "commercial_tax_rate": 10,
@@ -83,7 +83,7 @@ def get_random_name() -> str:
     return choice(people_names)
 
 
-def cursor_is_in_world(map: Map, window: pygame.surface.Surface, mouse_tile_x: int | None, mouse_tile_y: int | None) -> bool:
+def tile_is_in_world(map: Map, window: pygame.surface.Surface, mouse_tile_x: int | None, mouse_tile_y: int | None) -> bool:
     return (
         mouse_tile_x is not None
         and mouse_tile_y is not None
@@ -103,7 +103,8 @@ def clip(num: int | float, minimum: int, maximum: int) -> int:
 def get_neighbour_coords(map_width: int, map_height: int, x: int, y: int, include_void_tiles: bool = False) -> list[tuple[int, int] | tuple[int, int]]:
     neighbours: list[tuple[int, int] | tuple[int, int]] = []
     for x_neigh, y_neigh in NEIGHBOURS:
-        if 0 <= x + x_neigh < map_height and 0 <= y + y_neigh < map_width:
+        if 0 <= x + x_neigh < map_width and 0 <= y + y_neigh < map_height:
+        # if 0 <= x + x_neigh < map_height and 0 <= y + y_neigh < map_width:
             neighbours.append((x + x_neigh, y + y_neigh))
         elif include_void_tiles:
             neighbours.append((None, None))  # type: ignore[arg-type]

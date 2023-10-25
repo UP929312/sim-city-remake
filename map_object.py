@@ -83,8 +83,8 @@ class Map:
         return f"Map({self.version}, {self.settings})"
 
     def print(self) -> None:
-        for y in range(self.width):
-            print([self[x, y].type.name.removesuffix(" Tile").center(6) for x in range(self.height)])
+        for x in range(self.width):
+            print([self[x, y].type.name.removesuffix(" Tile").center(6) for y in range(self.height)])
 
     def __getitem__(self, key: tuple[int, int]) -> Tile:  # type: ignore[return]
         try:
@@ -144,7 +144,7 @@ class Map:
     def update_road_map(self) -> None:
         for x, y, tile in self.iter():
             self[x, y].road = 1 if tile.type.name in ROADS else 0
-        self.update_neighbours(0, self.width // 2)
+        self.update_neighbours(0, self.height // 2)
 
     def check_connected(self) -> None:
         self.update_road_map()
@@ -178,7 +178,7 @@ class Map:
         tile_type = biome_to_tile(current_entry_road.biome, include_water=self.settings["generate_lakes"])
         self[0, self.height//2] = Tile(tile_type, biome=current_entry_road.biome)
         # ===
-        self.settings["map_width"] += 2
+        self.settings["map_width"] += 2  # 1 on each side
         self.settings["map_height"] += 2
         self.tiles = np.pad(self.tiles, 1, mode="edge")  # type: ignore[call-overload]
         for (x, y, _) in self.iter():
@@ -189,10 +189,9 @@ class Map:
         self.redraw_entire_map()
 
     def iter(self) -> Generator[tuple[int, int, Tile], None, None]:
-        for x in range(self.height):
-            for y in range(self.width):
+         for x in range(self.width):
+            for y in range(self.height):
                 yield x, y, self[x, y]
-                # yield y, x, self[y, x]
 
 
 def has_connected_road(map: Map, x: int, y: int) -> bool:

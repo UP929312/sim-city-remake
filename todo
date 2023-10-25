@@ -43,3 +43,7 @@ Move centered text to the label class.
 Load Game menu should scale somehow, with the scrollbar, so more saves per window?
 
 Settings don't save...
+
+I really need to work out what is x and y, especially while looping, I'd like to be able to loop over from top left to bottom
+right like I'm reading a book, but I don't know entirely which bits need to change.
+Right, it seems like I've made some good progress on non-square roads?
