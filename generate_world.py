@@ -18,19 +18,19 @@ FLOORING_TO_PLANT = {
 }
 
 
-def generate_world(map_settings: MapSettingsType = DEFAULT_MAP_SETTINGS, seed: int | None = None) -> Map:
+def generate_world(map_settings: MapSettingsType, seed: int | None = None) -> Map:
     map_width, map_height = map_settings["map_width"], map_settings["map_height"]
     world: np.ndarray[tuple[int, int], Tile] = np.array(  # type: ignore[assignment, type-var]
         [[Tile() for _ in range(map_height)] for _ in range(map_width)]
-        #[[Tile() for _ in range(map_width)] for _ in range(map_height)]
+        # [[Tile() for _ in range(map_width)] for _ in range(map_height)]
     )
     noise = PerlinNoise(octaves=2, seed=seed or map_settings["seed"])
     random.seed(seed or map_settings["seed"])
 
     for x in range(map_width):
         for y in range(map_height):
-            world[x, y].biome = clip(noise([x/map_width, y/map_height]) * 3, -1, 1)
-            world[x, y].type = biome_to_tile(world[x, y].biome, include_water=map_settings["generate_lakes"], even_generate=map_settings["generate_biomes"])
+            world[x, y].biome = clip(noise([x/map_width, y/map_height]) * 3, -1, 1) if map_settings["generate_biomes"] else -0.5
+            world[x, y].type = biome_to_tile(world[x, y].biome, include_water=map_settings["generate_lakes"])
 
             if random.randint(1, 100) < map_settings["tree_density"]:
                 floor_name = world[x, y].type.name

@@ -7,7 +7,7 @@ import pygame
 from classes import ICON_LIST, get_type_by_name
 from menu import draw_policy_screen
 from menu_elements import IconButton, RowOfButtons
-from utils import ICON_SIZE
+from utils import ICON_SIZE, IMAGES
 
 if TYPE_CHECKING:
     from map_object import Map
@@ -49,18 +49,18 @@ def generate_side_bar(tool: str, draw_style: str, icon_offset: int, window: pyga
 
     x = window.get_width() - ICON_SIZE
     static_buttons = [
-        IconButton(x, 0, ICON_SIZE, ICON_SIZE, "change_draw_style", icon_image=f"{draw_style}_draw_icon", is_selected=True, on_click=button_press),  # type: ignore[arg-type]
-        IconButton(x, 64, ICON_SIZE, ICON_SIZE, "change_tool_select", icon_image="select_icon", is_selected=(tool == "select"), on_click=button_press),  # type: ignore[arg-type]
-        IconButton(x, 128, ICON_SIZE, ICON_SIZE, "change_tool_destroy", icon_image="destroy_icon", is_selected=(tool == "destroy"), on_click=button_press),  # type: ignore[arg-type]
-        IconButton(x, 192, ICON_SIZE, ICON_SIZE, "click_icon_road", icon_image="road_icon", is_selected=(tool == "road"), on_click=button_press),  # type: ignore[arg-type]
-        IconButton(x, 256, ICON_SIZE, ICON_SIZE, "scroll_up", icon_image="up_arrow", is_selected=True, on_click=button_press),  # type: ignore[arg-type]
-        IconButton(x, window.get_height()-ICON_SIZE*3, ICON_SIZE, ICON_SIZE, "scroll_down", icon_image="down_arrow", is_selected=True, on_click=button_press),  # type: ignore[arg-type]
-        IconButton(x, window.get_height()-ICON_SIZE, ICON_SIZE, ICON_SIZE, "policy_screen", icon_image="policy_menu", is_selected=True,
+        IconButton(x, 0, ICON_SIZE, ICON_SIZE, "change_draw_style", IMAGES[f"{draw_style}_draw_icon"], is_selected=True, on_click=button_press),  # type: ignore[arg-type]
+        IconButton(x, 64, ICON_SIZE, ICON_SIZE, "change_tool_select", IMAGES["select_icon"], is_selected=(tool == "select"), on_click=button_press),  # type: ignore[arg-type]
+        IconButton(x, 128, ICON_SIZE, ICON_SIZE, "change_tool_destroy", IMAGES["destroy_icon"], is_selected=(tool == "destroy"), on_click=button_press),  # type: ignore[arg-type]
+        IconButton(x, 192, ICON_SIZE, ICON_SIZE, "click_icon_road", IMAGES["road_icon"], is_selected=(tool == "road"), on_click=button_press),  # type: ignore[arg-type]
+        IconButton(x, 256, ICON_SIZE, ICON_SIZE, "scroll_up", IMAGES["up_arrow"], is_selected=True, on_click=button_press),  # type: ignore[arg-type]
+        IconButton(x, window.get_height()-ICON_SIZE*3, ICON_SIZE, ICON_SIZE, "scroll_down",   IMAGES["down_arrow"], is_selected=True, on_click=button_press),  # type: ignore[arg-type]
+        IconButton(x, window.get_height()-ICON_SIZE,   ICON_SIZE, ICON_SIZE, "policy_screen", IMAGES["policy_menu"], is_selected=True,
                    on_click=lambda *_: handle_policy_change(window, tool, draw_style, icon_offset, settings)),  # type: ignore[arg-type]
     ]
     dynamic_buttons = []
     for i, icon in enumerate([ICON_LIST[(i + icon_offset) % len(ICON_LIST)] for i in range(verticle_tiles)]):
-        button = IconButton(x, 320 + i * 64, ICON_SIZE, ICON_SIZE, f"click_icon_{icon}", icon_image=icon, is_selected=(tool == icon.removesuffix("_icon")), on_click=button_press)  # type: ignore[arg-type]
+        button = IconButton(x, 320 + i * 64, ICON_SIZE, ICON_SIZE, f"click_icon_{icon}", IMAGES[icon], is_selected=(tool == icon.removesuffix("_icon")), on_click=button_press)  # type: ignore[arg-type]
         dynamic_buttons.append(button)
 
     for element in static_buttons + dynamic_buttons:
@@ -72,9 +72,11 @@ def generate_side_bar(tool: str, draw_style: str, icon_offset: int, window: pyga
 def generate_bottom_bar(window: pygame.surface.Surface, map: Map, view: str, run_counter: int, clock: pygame.time.Clock, error_text: str) -> RowOfButtons:
     row_of_buttons = RowOfButtons(0, window.get_height() - ICON_SIZE, window.get_width()-ICON_SIZE, ICON_SIZE,
         [
-            f"Cash: {map.cash}", view.removesuffix("_view").capitalize(),
-            f"FPS: {int(clock.get_fps())}, Vehics: {len(map.entity_lists['Vehicle'])}",
-            str(run_counter)
+            f"Cash: {map.cash}  "
+            f"{view.removesuffix('_view').capitalize()}  "
+            f"FPS: {int(clock.get_fps())}  "
+            f"Vehicles: {len(map.entity_lists['Vehicle'])}  "
+            f"Run Counter: {run_counter}  "
         ] + ([error_text] if error_text else [])
     )
     row_of_buttons.draw(window, 0)

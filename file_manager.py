@@ -16,22 +16,22 @@ class PreferencesType(TypedDict):
 
 
 def save_game(map: Map, save_file_name: str) -> None:
-    with open("saves/" + save_file_name, "w") as file:
+    with open("saves/" + save_file_name, "w", encoding="utf-8") as file:
         json.dump(map.to_dict(), file, indent=4)
 
 
 def load_game(save_file_name: str) -> Map:
-    with open("saves/" + save_file_name, "r") as file:
+    with open("saves/" + save_file_name, "r", encoding="utf-8") as file:
         return Map.from_dict(json.load(file))
 
 
 def load_preferences() -> PreferencesType:
-    with open("preferences.txt", "r") as file:
+    with open("preferences.txt", "r", encoding="utf-8") as file:
         return BASE_PREFERENCES | json.load(file)  # type: ignore[no-any-return]
 
 
 def save_preferences(preferences: PreferencesType) -> None:
-    with open("preferences.txt", "w") as file:
+    with open("preferences.txt", "w", encoding="utf-8") as file:
         json.dump(preferences, file)
 
 

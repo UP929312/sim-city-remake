@@ -1,10 +1,8 @@
 import math
 import sys
-from typing import Any, Callable, Literal, NoReturn
+from typing import Any, Callable, NoReturn, TypeVar
 
 import pygame
-
-from utils import IMAGES
 
 
 class GoBack(Exception):
@@ -34,11 +32,17 @@ class Element:
     def __str__(self) -> str:
         return f"{self.__class__.__name__} object: ({self.x1}, {self.y1}) width and height: {self.width}, {self.height}, with text `{self.text}`"
 
-    def intersected(self, x: int, y: int, vertical_scroll_offset: int):  # type: ignore[no-untyped-def]   # -> "Element" | None
+    def intersected(self, x: int, y: int):  # type: ignore[no-untyped-def]   # -> "Element" | None
         return (self if
                 self.x1 <= x <= self.x1 + self.width and
-                self.y1 <= y-vertical_scroll_offset <= self.y1 + self.height  # Remove the offset from the y coord
+                self.y1 <= y <= self.y1 + self.height  # Remove the offset from the y coord
                 else None)
+
+    def draw(self, window: pygame.surface.Surface, vertical_scroll_offset: int) -> None:
+        raise NotImplementedError
+
+
+ElementType = TypeVar('ElementType', bound=Element)
 
 
 class Label(Element):
@@ -79,7 +83,8 @@ class IconButton(Element):
     """
 
     def __init__(
-        self, x1: int, y1: int, width: int, height: int, text: str, icon_image: str, is_selected: bool, on_click: Callable[[pygame.surface.Surface, Button, int, int], None]
+        self, x1: int, y1: int, width: int, height: int, text: str, icon_image: pygame.surface.Surface,
+        is_selected: bool, on_click: Callable[[pygame.surface.Surface, Button, int, int], None]
     ) -> None:
         super().__init__(x1, y1, width, height, text)
         self.icon_image = icon_image
@@ -90,7 +95,7 @@ class IconButton(Element):
         self.size = 32
 
     def draw(self, window: pygame.surface.Surface, vertical_scroll_offset: int) -> None:
-        window.blit(IMAGES[self.icon_image], (self.x1, self.y1+vertical_scroll_offset))
+        window.blit(self.icon_image, (self.x1, self.y1+vertical_scroll_offset))
         if self.is_selected:
             pygame.draw.rect(window, (255, 255, 255), (self.x1, self.y1, self.size, 1))  # Top
             pygame.draw.rect(window, (255, 255, 255), (self.x1, self.y1, 1, self.size))  # Left
@@ -153,12 +158,11 @@ class ToggleRow(Element):
 
     def draw(self, window: pygame.surface.Surface, vertical_scroll_offset: int) -> None:
         for child in (self.name_label, self.toggled_label, self.toggle_button):
-            child.draw(window, vertical_scroll_offset)  # type: ignore[attr-defined]
+            child.draw(window, vertical_scroll_offset)
 
-    def on_click(self, *_: Any) -> Literal["Not None"]:
+    def on_click(self, *_: Any) -> None:
         self.value = not self.value
         self.toggled_label.text = "(Yes)" if self.value else "(No)"
-        return "Not None"
 
     def __str__(self) -> str:
         return (
@@ -198,7 +202,7 @@ class IntegerSelector(Element):
         for child in self.children:
             child.draw(window, vertical_scroll_offset)
 
-    def on_click(self, _: pygame.surface.Surface, button: Button, *_1: Any) -> Literal["Not None"]:
+    def on_click(self, _: pygame.surface.Surface, button: Button, *_1: Any) -> None:
         if button.text == "<<":
             self.value = max(self.value - self.big_step, self.minimum)
         elif button.text == "<":
@@ -213,14 +217,13 @@ class IntegerSelector(Element):
         elif button.text == ">>":
             self.value = min(self.maximum, self.value + self.big_step)
         else:
-            print(f"Uh oh, IntegerSelector recieved something outside of it's normal, it recieved: {button.text}")
+            raise IndexError(f"Uh oh, IntegerSelector recieved something outside of it's normal, it recieved: {button.text}")
         self.value_label.text = str(self.value)
-        return "Not None"
 
-    def intersected(self, x: int, y: int, vertical_scroll_offset: int) -> Button | None:  # type: ignore[return]
-        if super().intersected(x, y, vertical_scroll_offset):
+    def intersected(self, x: int, y: int) -> Button | None:  # type: ignore[return]
+        if super().intersected(x, y):
             for button in self.children[2:]:
-                if button.intersected(x, y, vertical_scroll_offset):
+                if button.intersected(x, y):
                     return button  # type: ignore[return-value]
 
     def __str__(self) -> str:
@@ -254,8 +257,8 @@ class SliderElement(Element):
         self.slider_button.draw(window, vertical_scroll_offset)
         pygame.draw.rect(window, (80, 80, 80), rect=(self.x1 + width_in, vertical_scroll_offset+self.y1 - (int(self.height / 1.3)), self.width // 20, self.height * 2))
 
-    def intersected(self, x: int, y: int, vertical_scroll_offset: int) -> Button | None:  # type: ignore[return]
-        if self.slider_button.intersected(x, y, vertical_scroll_offset):
+    def intersected(self, x: int, y: int) -> Button | None:  # type: ignore[return]
+        if self.slider_button.intersected(x, y):
             return self.slider_button
 
 
@@ -270,8 +273,8 @@ class SliderRow(Element):
     def on_click(self, *_) -> None:  # type: ignore[no-untyped-def]
         pass  # Sigh, I never thought I'd get to this, but without this function/pass, it doesn't work
 
-    def intersected(self, x: int, y: int, vertical_scroll_offset: int) -> Button | None:  # type: ignore[return]
-        if self.slider_element.intersected(x, y, vertical_scroll_offset):
+    def intersected(self, x: int, y: int) -> Button | None:  # type: ignore[return]
+        if self.slider_element.intersected(x, y):
             return self.slider_element.slider_button
 
     def draw(self, window: pygame.surface.Surface, vertical_scroll_offset: int) -> None:
@@ -301,12 +304,12 @@ BACK_BUTTON = Button(0, 0, 64, 64, "<", lambda *_: go_back())
 
 
 def handle_collisions(window: pygame.surface.Surface, mouse_x: int, mouse_y: int,
-                      elements: list[Button | IconButton], vertical_scroll_offset: int) -> None | Any:  # type: ignore[return]
+                      elements: list[ElementType], vertical_scroll_offset: int) -> None | Any:
     """
     Returns None if no collisions were detected, else returns the value of the `on_click` function of the butotn that was pressed.
     """
     for element in [x for x in elements if hasattr(x, "on_click")]:
-        clicked_button = element.intersected(mouse_x, mouse_y, vertical_scroll_offset)
+        clicked_button = element.intersected(mouse_x, mouse_y-vertical_scroll_offset)
         if clicked_button:
             # rint("="*50, "\n", str(clicked_button), "\n")
             result = clicked_button.on_click(window, clicked_button, mouse_x, mouse_y)  # pyright: ignore
@@ -314,7 +317,7 @@ def handle_collisions(window: pygame.surface.Surface, mouse_x: int, mouse_y: int
     return None
 
 
-def handle_menu(window: pygame.surface.Surface, title: str, elements: list[Button | IconButton | SliderRow]) -> Any:
+def handle_menu(window: pygame.surface.Surface, title: str, elements: list[ElementType]) -> Any:
     """
     A forever loop which will exit when a button press returns something that isn't None, or they press Escape
     """
@@ -337,9 +340,9 @@ def handle_menu(window: pygame.surface.Surface, title: str, elements: list[Butto
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_LEFT:
                 x, y = pygame.mouse.get_pos()
-                result = handle_collisions(window, x, y, elements, amount_vertically_scrolled)  # type: ignore[arg-type]
-                if result is not None:  # and result != "Not None":
-                    return result  # type: ignore[no-any-return]
+                result = handle_collisions(window, x, y, elements, amount_vertically_scrolled)
+                if result is not None:
+                    return result
             if event.type == pygame.MOUSEWHEEL and max_scroll_amount > window.get_height():  # Only if we need to scroll
                 scrolling_down = event.y > 0
                 event.y *= 10

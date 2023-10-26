@@ -1,6 +1,6 @@
 new_names = []
 
-with open("name_list.txt", "r") as file:
+with open("name_list.txt", "r", encoding="utf-8") as file:
     people_names: list[str] = file.read().split("\n")
     # rint(len(people_names))
     for name_row in people_names:
@@ -21,5 +21,5 @@ with open("name_list.txt", "r") as file:
 
 # rint(len(new_names))
 
-with open("cleaned_names.txt", "w") as file:
+with open("cleaned_names.txt", "w", encoding="utf-8") as file:
     file.write("\n".join(sorted(new_names)))

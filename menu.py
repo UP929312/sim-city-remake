@@ -45,11 +45,11 @@ def load_game_menu(window: pygame.surface.Surface, *_: Any) -> str:
             elements.append(Button(right_margin, top_margin, button_height, button_height, "^", lambda *_: max(0, offset - 1)))
             elements.append(Button(right_margin, top_margin + (110 * 4), button_height, button_height, "V", lambda *_: min(offset + 1, num_of_saves - 5)))
 
-        result = handle_menu(window, "Saves:", elements)  # type: ignore[arg-type]
+        result = handle_menu(window, "Saves:", elements)
         if isinstance(result, int):  # Changing the offset
             offset = result
         elif result is not None:  # Level seleted
-            return result  # type: ignore[return-value]
+            return result  # type: ignore[no-any-return]
 
 # ================================================================================================================================
 
@@ -74,7 +74,7 @@ def world_settings_menu(window: pygame.surface.Surface, *_: Any) -> MapSettingsT
     ]
 
     while True:
-        if handle_menu(window, "World", elements) not in [None, "Not None"]:  # type: ignore[comparison-overlap, arg-type]
+        if handle_menu(window, "World", elements) is not None:
             new_map_settings: MapSettingsType = map_settings | {x.key: x.value for x in elements if hasattr(x, "key")}  # type: ignore[union-attr, assignment]
             # new_map_settings["map_height"] = new_map_settings["map_width"]
             return new_map_settings
@@ -94,8 +94,9 @@ def settings_menu(window: pygame.surface.Surface, *_: Any) -> NoReturn:
 
     while True:
         # Purposefully doesn't catch GoBack so that the parent menu can catch it.
-        handle_menu(window, "Settings", elements)  # type: ignore[arg-type]
-        new_prefs: PreferencesType = prefs | {x.key: x.value for x in elements if hasattr(x, "key")}  # type: ignore[union-attr, no-redef, assignment]
+        handle_menu(window, "Settings", elements)
+        new_prefs: PreferencesType = prefs | {x.key: x.value for x in elements if hasattr(x, "key")}  # type: ignore[union-attr, assignment]
+        print(new_prefs)
         save_preferences(new_prefs)
 
 
@@ -113,7 +114,7 @@ def draw_main_menu(window: pygame.surface.Surface, *_: Any) -> Map:
 
     while True:
         try:
-            result = handle_menu(window, "Main Menu", elements)  # type: ignore[arg-type]
+            result = handle_menu(window, "Main Menu", elements)
         except GoBack:
             pass  # This forces the next iteration of the while True loop, going back to the main menu,
             # Basically, we break out the while loop in the handle_menu's submenu to get back here
@@ -121,8 +122,8 @@ def draw_main_menu(window: pygame.surface.Surface, *_: Any) -> Map:
             if result is not None:  # result will be dict of map settings or a save name
                 if isinstance(result, dict):
                     return generate_world(result)  # type: ignore[arg-type]
-                else:
-                    return load_game(result)  # type: ignore[arg-type]
+
+                return load_game(result)
 
 
 # ===============================================================================================================================
@@ -173,16 +174,15 @@ def draw_pause_menu(window: pygame.surface.Surface, world: Map) -> Map | None:
 
     while True:
         try:
-            result = handle_menu(window, "Pause menu", pause_menu_buttons)  # type: ignore[arg-type]
+            result = handle_menu(window, "Pause menu", pause_menu_buttons)
         except GoBack:
             return None
         if result is not None:
             if isinstance(result, Map):
                 return result  # Resume, new settings probably
-            elif isinstance(result, dict):
+            if isinstance(result, dict):
                 return generate_world(result)  # type: ignore[arg-type]  # This is for new game
-            else:
-                return load_game(result)  # type: ignore[arg-type]  # This is for loading a game
+            return load_game(result)  # This is for loading a game
 
 
 def draw_policy_screen(window: pygame.surface.Surface, settings: MapSettingsType) -> MapSettingsType:
@@ -196,7 +196,7 @@ def draw_policy_screen(window: pygame.surface.Surface, settings: MapSettingsType
     ]
     while True:
         try:
-            handle_menu(window, "Policies", buttons)  # type: ignore[arg-type]
+            handle_menu(window, "Policies", buttons)
         except GoBack:
             settings = settings | {x.key: x.value for x in buttons if hasattr(x, "key")}  # type: ignore[assignment, union-attr]
             return settings

@@ -139,7 +139,8 @@ class GenericTile:
     def on_place(self, map: Map, x: int, y: int) -> None:
         place_on_type = map[x, y].type
         if self.cost is not None and map.cash < self.cost:
-            return print("classes:", f"Cannot afford a {self.name}, it costs {self.cost}")
+            print("classes:", f"Cannot afford a {self.name}, it costs {self.cost}")
+            return
 
         if not place_on_type.can_place_on:
             return  # rint("classes:", f"Cannot place {self.name} on {place_on_type.name}")
@@ -203,7 +204,7 @@ class Road(GenericRoad):
     def on_destroy(self, map: Map, x: int, y: int) -> None:
         super().on_destroy(map, x, y)
         # Delete all the cached routes that pass through this tile
-        for key, route_list in {k: v for k, v in map.route_cache.items()}:  # Copy dictionary
+        for key, route_list in dict(map.route_cache.items()):  # Copy dictionary
             if (x, y) in route_list:  # type: ignore[comparison-overlap]
                 del map.route_cache[key]  # type: ignore[arg-type]
 
@@ -214,7 +215,7 @@ class Road(GenericRoad):
     def on_place(self, map: Map, x: int, y: int) -> None:
         super().on_place(map, x, y)
         # Delete all the cached routes that pass through this tile
-        for key, route_list in {k: v for k, v in map.route_cache.items()}:  # Copy dictionary
+        for key, route_list in dict(map.route_cache.items()):  # Copy dictionary
             if (x, y) in route_list:  # type: ignore[comparison-overlap]
                 del map.route_cache[key]  # type: ignore[arg-type]
 
@@ -225,20 +226,16 @@ class Road(GenericRoad):
     def get_general_view_texture(self, map: Map, x: int, y: int, old_roads: bool) -> pygame.Surface:  # type: ignore[return]
         if old_roads:
             return IMAGES["roads/road_rotation_0"]
-        else:
-            neighbour_string = get_neighbouring_road_string(map, x, y)  # Returns something like 1011 = 3 neighours
-            assert neighbour_string is not None
-            for i, string in enumerate([neighbour_string[i:4] + neighbour_string[0:i] for i in range(4)]):
-                final_string = "roads/" + string+f"_rotation_{360+i*-90}"
-                if final_string in IMAGES:
-                    return IMAGES[final_string]
+
+        neighbour_string = get_neighbouring_road_string(map, x, y)  # Returns something like 1011 = 3 neighours
+        assert neighbour_string is not None
+        for i, string in enumerate([neighbour_string[i:4] + neighbour_string[0:i] for i in range(4)]):
+            final_string = "roads/" + string+f"_rotation_{360+i*-90}"
+            if final_string in IMAGES:
+                return IMAGES[final_string]
 
     def draw_heatmap_view(self, tile: Tile) -> COLOUR_TYPE:
-        value = tile.vehicle_heatmap
-        if value > 20:
-            return (value, 0, 0)
-        else:
-            return (20, 20, 20)
+        return (max(20, tile.vehicle_heatmap), 20, 20)
 
 
 class EntryRoad(GenericRoad):
@@ -539,7 +536,7 @@ def get_type_by_name(name: str) -> GenericTile:  # type: ignore[return]
     print(f"classes: DEBUG: COULD NOT FIND {name}")
 
 
-def biome_to_tile(biome: float, include_water: bool = False, even_generate: bool = True) -> Sand | Dirt | Water | Grass | Gravel:
+def biome_to_tile(biome: float, include_water: bool = False) -> Sand | Dirt | Water | Grass | Gravel:
     """Used by the generator to convert noise to tiles, as well
     as when removing zoning to replace the floor that was there before
     Include water is used for generating without lakes, as well as when
@@ -551,18 +548,13 @@ def biome_to_tile(biome: float, include_water: bool = False, even_generate: bool
 
     If even_generate is set to False, it won't actually generate, and will just return grass.
     """
-    if not even_generate:
-        return grass
     if biome > 0.3:
         return sand
-    elif biome > 0:
-        return dirt
-        # return Gravel()
-    else:  # > -0.6
-        if include_water and biome <= -0.6:
-            return water
-        else:
-            return grass
+    if biome > 0:
+        return dirt  #  gravel
+    if include_water and biome <= -0.6:
+        return water
+    return grass
 
 
 class Tile:

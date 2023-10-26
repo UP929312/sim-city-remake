@@ -89,10 +89,8 @@ def tile_is_in_world(map: Map, window: pygame.surface.Surface, mouse_tile_x: int
         and mouse_tile_y is not None
         and mouse_tile_x < map.width
         and mouse_tile_y < map.height
-        and mouse_tile_x >= 0
-        and mouse_tile_y >= 0
-        and mouse_tile_x < window.get_height() - ICON_SIZE  # Need offset and stuff
-        and mouse_tile_y < window.get_width() - ICON_SIZE  # Need offset and stuff
+        and 0 <= mouse_tile_x < window.get_height() - ICON_SIZE  # Need offset and stuff
+        and 0 <= mouse_tile_y < window.get_width() - ICON_SIZE  # Need offset and stuff
     )
 
 
@@ -104,7 +102,6 @@ def get_neighbour_coords(map_width: int, map_height: int, x: int, y: int, includ
     neighbours: list[tuple[int, int] | tuple[int, int]] = []
     for x_neigh, y_neigh in NEIGHBOURS:
         if 0 <= x + x_neigh < map_width and 0 <= y + y_neigh < map_height:
-        # if 0 <= x + x_neigh < map_height and 0 <= y + y_neigh < map_width:
             neighbours.append((x + x_neigh, y + y_neigh))
         elif include_void_tiles:
             neighbours.append((None, None))  # type: ignore[arg-type]

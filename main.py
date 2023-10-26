@@ -179,7 +179,7 @@ while True:
             mouse_down_x, mouse_down_y = pygame.mouse.get_pos()
             mouse_down_tile_x, mouse_down_tile_y = convert_mouse_pos_to_coords(mouse_down_x, mouse_down_y, x_offset, y_offset)
 
-            right_bar_result: None | tuple[str, str, int, MapSettingsType] = handle_collisions(window, mouse_down_x, mouse_down_y, side_bar_elements, 0)  # type: ignore[arg-type]
+            right_bar_result: None | tuple[str, str, int, MapSettingsType] = handle_collisions(window, mouse_down_x, mouse_down_y, side_bar_elements, 0)
             if right_bar_result is not None:
                 tool, draw_style, icon_offset, new_settings = right_bar_result
                 map.settings: MapSettingsType = map.settings | new_settings  # type: ignore[misc]

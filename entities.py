@@ -5,11 +5,12 @@ from typing import TYPE_CHECKING, TypedDict
 
 import pygame
 
+from utils import (ICON_SIZE, IMAGES, TILE_WIDTH, DeleteEntity,
+                   get_random_name, rot_center)
+
 if TYPE_CHECKING:
     from map_object import Map
 
-from utils import (ICON_SIZE, IMAGES, TILE_WIDTH, DeleteEntity,
-                   get_random_name, rot_center)
 
 # LOCATION_TYPES = ["Spawn", "House", "Shop", "Office", "Park"]
 
@@ -45,8 +46,8 @@ def create_route(map: Map, route_type: str) -> tuple[None, None] | tuple[tuple[i
 
 
 num_of_entity_sprites = {
-    "Vehicle": len([x for x in IMAGES.keys() if x.startswith("entities/vehicle") and x[-1].isdigit()]),
-    "Pedestrian": len([x for x in IMAGES.keys() if x.startswith("entities/pedestrian") and x[-1].isdigit()]),
+    "Vehicle": len([x for x in IMAGES if x.startswith("entities/vehicle") and x[-1].isdigit()]),
+    "Pedestrian": len([x for x in IMAGES if x.startswith("entities/pedestrian") and x[-1].isdigit()]),
 }
 
 rotated_entities_cache = {
@@ -154,7 +155,7 @@ class Vehicle(Entity):
         direction_offsets (dict): A dictionary mapping directions to their corresponding x, y, and rotation offsets.
     """
 
-    __slots__ = ("passengers")
+    __slots__ = ("passengers",)
     max_path_length = 1500
     speed = 2
     direction_offsets = {
@@ -172,7 +173,7 @@ class Vehicle(Entity):
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
         """
-        super(Vehicle, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.passengers = [Person() for _ in range(randint(1, 4))]
 
     def __repr__(self) -> str:

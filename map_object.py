@@ -189,7 +189,7 @@ class Map:
         self.redraw_entire_map()
 
     def iter(self) -> Generator[tuple[int, int, Tile], None, None]:
-         for x in range(self.width):
+        for x in range(self.width):
             for y in range(self.height):
                 yield x, y, self[x, y]
 

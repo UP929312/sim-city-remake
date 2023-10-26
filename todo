@@ -11,10 +11,10 @@
 - The save world screen is 90% done, the title doesn't dynamically change, and we probably need a back button.
 - Trees now work on a density system, so small worlds aren't filled with trees
 - Scrolling in menus now works too, allowing the addition of map width and height selectors
+- After a lot of work, non-square worlds now work (rectangle worlds), which is great.
 
-- As long as it's a big square, everything works, the overlays work great now, and the menus scale 90%,
+- The overlays work great now, and the menus scale 90%,
 - Need to make the main menus scale nicer (everything works actually, apart from main menu, potentially because it never gets the new values?)
-- Mess around with non-square worlds
 
 - Currently, expansion works great, but doesn't include the perlin noise, maybe make it all dirt or something? Also need to make the regen world not do it if it's a bad number
 - For the expansion, obviously we need to loop until we don't get a bad number from the perlin noise, but also, we can generate an entire bigger perlin noise grid (slow, I know), and then cut out the edge
@@ -30,20 +30,8 @@
 - Currently, the new world menu doesn't save, intentionally, should I change this?
 
 - flake8 . --ignore=E501,E226,W503,E203,E241,PBP113,E301,PBP115,E123,E128,W504
-
-- To make non-square grids, we need to swap around a bunch of map_width and map_heights probably.\
-- The rectangle worlds are kind of working (looking forward to ribbon worlds tbh), just lots of errors to do with x and ys the wrong way round.
-
-- Need a new way to handle Not None, now the settings menu is broken because of it.
-- I can't remember what wasn't working, but I reverted and things are kinda working again?
-- Okay, it's to do with scrolling and menus, if we don't do it, the menus scroll resets if they click something.
-
-Move centered text to the label class.
+- pylint *.py --disable=invalid-name,missing-function-docstring,fixme,line-too-long,redefined-builtin,missing-module-docstring,pointless-string-statement,missing-class-docstring,c-extension-no-member,no-member,too-many-arguments,too-many-instance-attributes
 
 Load Game menu should scale somehow, with the scrollbar, so more saves per window?
 
-Settings don't save...
-
-I really need to work out what is x and y, especially while looping, I'd like to be able to loop over from top left to bottom
-right like I'm reading a book, but I don't know entirely which bits need to change.
-Right, it seems like I've made some good progress on non-square roads?
+Settings don't save... Still
