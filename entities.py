@@ -215,7 +215,7 @@ class Pedestrian(Entity):
 
 class Passenger(Person):
     __slots__ = ()
-    """Does nothing now, but will in a vehicle's "passenger" list"""
+    """Does nothing now, but will be in a vehicle's "passenger" list"""
 
 
 class EntityList(TypedDict):

@@ -5,12 +5,12 @@ from typing import TypedDict
 
 from map_object import Map
 
-BASE_PREFERENCES: PreferencesType = {"max_vehicles": 500, "max_people": 0, "rainbow_entities": False, "old_roads": False}
+BASE_PREFERENCES: PreferencesType = {"max_vehicles": 500, "max_pedestrians": 0, "rainbow_entities": False, "old_roads": False}
 
 
 class PreferencesType(TypedDict):
     max_vehicles: int
-    max_people: int
+    max_pedestrians: int
     rainbow_entities: bool
     old_roads: bool
 
@@ -42,8 +42,10 @@ def migrate_worlds() -> None:
         print(save)
         map = load_game(save)
 
-        # for (x, y, tile) in map.iter():
-        #   # old_tile = map[x, y]
+        # for (_, _, tile) in map.iter():
+        # #     #tile.biome = tile.height_map
+        #     if hasattr(tile, "road"):
+        #         del tile.road
 
         # map.version = VERSION
         save_game(map, save)

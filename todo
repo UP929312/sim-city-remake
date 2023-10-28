@@ -27,11 +27,24 @@
 
 - The recursion limit needs to be changed depending on world size, and I guess pathfinding is going to struggle way more on bigger worlds.
 
-- Currently, the new world menu doesn't save, intentionally, should I change this?
-
 - flake8 . --ignore=E501,E226,W503,E203,E241,PBP113,E301,PBP115,E123,E128,W504
-- pylint *.py --disable=invalid-name,missing-function-docstring,fixme,line-too-long,redefined-builtin,missing-module-docstring,pointless-string-statement,missing-class-docstring,c-extension-no-member,no-member,too-many-arguments,too-many-instance-attributes
+- pylint *.py --disable=invalid-name,missing-function-docstring,fixme,line-too-long,redefined-builtin,missing-module-docstring,pointless-string-statement,missing-class-docstring,c-extension-no-member,no-member,too-many-arguments,too-many-instance-attributes,unused-argument,too-few-public-methods,too-many-locals
+- mypy . --strict
 
-Load Game menu should scale somehow, with the scrollbar, so more saves per window?
+Somehow make menus update in real time to changes in size of window?
 
-Settings don't save... Still
+Make scrolling in the load game menu scroll the index?
+
+The route cache doesn't work, it just dies after a while, maybe I could even bake it into the level somehow, I guess expansion would break that.
+
+Change on place and destroy to return None of str of error, or success I guess. Done, but now it's not persistant, maybe a way to have a fading state?
+
+tile_is_in_world needs to take into account offsets and do something with them
+
+Change biome to be height map, and then use biome for snow, sand, that kind of thing
+For old maps, regenerate a new set of biome and height_map values
+
+God damnnit, menus un-scroll in the create world menu
+
+Expansion stuff, i.e. on one side, floating text, basically like prison architect, and hover colour
+Instead of random key binds, a dev menu with more buttons and stuff

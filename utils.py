@@ -10,7 +10,7 @@ import pygame
 if TYPE_CHECKING:
     from map_object import Map
 
-VERSION = (7, 0, 0)
+VERSION = (7, 1, 0)
 
 TILE_WIDTH = 16
 TICK_RATE = 5
@@ -66,14 +66,15 @@ def rot_center(image: pygame.surface.Surface, angle: int) -> pygame.surface.Surf
 
 
 IMAGES: dict[str, pygame.surface.Surface] = {}
-for image in listdir("images"):
-    if image.endswith(".png"):
-        IMAGES[image.removesuffix(".png")] = pygame.image.load("images/" + image)  # TODO: This: .convert_alpha()
+for image_name in listdir("images"):
+    if image_name.endswith(".png"):
+        IMAGES[image_name.removesuffix(".png")] = pygame.image.load("images/" + image_name)  # TODO: This: .convert_alpha()
 for road_image in listdir("images/roads"):
     for rotation in [0, 90, 180, 270, 360]:
         IMAGES["roads/" + road_image.removesuffix(".png") + f"_rotation_{rotation}"] = rot_center(pygame.image.load("images/roads/" + road_image), rotation)
 for entity_image in listdir("images/entities"):
     IMAGES["entities/" + entity_image.removesuffix(".png")] = pygame.image.load("images/entities/" + entity_image)
+
 
 with open("name_list.txt", "r", encoding="utf-8") as file:
     people_names = file.read().split("\n")
@@ -87,10 +88,10 @@ def tile_is_in_world(map: Map, window: pygame.surface.Surface, mouse_tile_x: int
     return (
         mouse_tile_x is not None
         and mouse_tile_y is not None
-        and mouse_tile_x < map.width
-        and mouse_tile_y < map.height
-        and 0 <= mouse_tile_x < window.get_height() - ICON_SIZE  # Need offset and stuff
-        and 0 <= mouse_tile_y < window.get_width() - ICON_SIZE  # Need offset and stuff
+        and 0 <= mouse_tile_x < map.width
+        and 0 <= mouse_tile_y < map.height
+        # and mouse_tile_x < window.get_width() - ICON_SIZE  # Need offset and stuff
+        # and mouse_tile_y < window.get_height() - ICON_SIZE  # Need offset and stuff
     )
 
 
@@ -108,13 +109,9 @@ def get_neighbour_coords(map_width: int, map_height: int, x: int, y: int, includ
     return neighbours
 
 
-def get_neighbouring_road_string(map: Map, x: int, y: int) -> str | None:  # DO NOT TYPE HINT THIS TILE
-    tile = map[x, y]
-    if tile.type.name == "Road":
-        neighbours = get_neighbour_coords(map.width, map.height, x, y, include_void_tiles=True)
-        neighbouring_roads = "".join(["0" if (_x is None or not map[_x, _y].road) else "1" for (_x, _y) in neighbours])
-    else:
-        neighbouring_roads = None
+def get_neighbouring_road_string(map: Map, x: int, y: int) -> str:
+    neighbours = get_neighbour_coords(map.width, map.height, x, y, include_void_tiles=True)
+    neighbouring_roads = "".join(["0" if (_x is None or not map[_x, _y].road) else "1" for (_x, _y) in neighbours])
     return neighbouring_roads
 
 
@@ -142,7 +139,7 @@ def get_all_grid_coords(x1: int, y1: int, x2: int, y2: int, single_place: bool) 
 
 
 def get_class_properties(cls: object) -> list[str]:
-    return [i for i in dir(cls) if not i.startswith("_")]
+    return [i for i in dir(cls) if not i.startswith("_") and i not in ["to_dict", "from_dict"]]
 
 
 def reset_map(window: pygame.surface.Surface, map: Map) -> tuple[int, int]:
@@ -151,6 +148,10 @@ def reset_map(window: pygame.surface.Surface, map: Map) -> tuple[int, int]:
     x_offset = window.get_width() // 2 - (TILE_WIDTH * map.width // 2) - TILE_WIDTH  # Center the world
     y_offset = window.get_height() // 2 - (TILE_WIDTH * map.height // 2) - TILE_WIDTH  # Center the world
     map.redraw_entire_map()
+
+    for entity_name in map.entity_lists.keys():
+        map.entity_lists[entity_name] = []  # type: ignore[literal-required]
+
     return x_offset, y_offset
 
 

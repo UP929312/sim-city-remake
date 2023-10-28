@@ -6,7 +6,7 @@ import numpy as np
 from pathfinding.core.grid import Grid  # type: ignore[import]
 from pathfinding.finder.best_first import BestFirst  # type: ignore[import]
 
-from classes import ROADS, Tile, biome_to_tile, entry_road
+from classes import ROADS, Tile, entry_road, generate_tile_type
 from entities import EntityList
 from utils import MapSettingsType, get_neighbour_coords
 
@@ -90,8 +90,7 @@ class Map:
         try:
             return self.tiles[key]  # type: ignore[no-any-return]
         except IndexError:
-            print("ERROR", key)
-            # return Tile()
+            print("ERROR", "#"*50, key)
 
     def __setitem__(self, key: tuple[int, int], value: Tile) -> None:
         self.tiles[key] = value
@@ -101,14 +100,15 @@ class Map:
             tile.redraw = True
 
     def generate_route(self, start: COORD_TYPE, end: COORD_TYPE) -> list[COORD_TYPE]:
-        if (start, end) in self.route_cache:
-            return self.route_cache[(start, end)]
-        if (end, start) in self.route_cache:
-            self.route_cache[(start, end)] = self.route_cache[(end, start)][::-1]
-            return self.route_cache[(start, end)]
+        # if (start, end) in self.route_cache:
+        #     return self.route_cache[(start, end)]
+        # if (end, start) in self.route_cache:
+        #     self.route_cache[(start, end)] = self.route_cache[(end, start)][::-1]
+        #     return self.route_cache[(start, end)]
         matrix = np.array([
             [(self[x, y].type.name in ROADS or (x, y) in [start, end]) and self[x, y].fire_ticks is None
-             for (x, y, _) in self.iter()]
+             for x in range(self.width)] for y in range(self.height)
+            # for (x, y, _) in self.iter()]
         ])
         grid = Grid(matrix=matrix)
         start_node, end_node = grid.node(*start), grid.node(*end)
@@ -175,8 +175,8 @@ class Map:
     def expand(self) -> None:
         # === We need to move the current entry road, we replace it later on
         current_entry_road = self[0, self.height//2]
-        tile_type = biome_to_tile(current_entry_road.biome, include_water=self.settings["generate_lakes"])
-        self[0, self.height//2] = Tile(tile_type, biome=current_entry_road.biome)
+        tile_type = generate_tile_type(current_entry_road.height_map, include_water=self.settings["generate_lakes"])
+        self[0, self.height//2] = Tile(tile_type, height_map=current_entry_road.height_map)
         # ===
         self.settings["map_width"] += 2  # 1 on each side
         self.settings["map_height"] += 2
@@ -185,7 +185,7 @@ class Map:
             if x == 0 or y == 0 or x == self.width - 1 or y == self.height - 1:
                 self[x, y] = Tile()
 
-        self[0, self.height//2] = Tile(entry_road, biome=self[0, self.height//2].biome)
+        self[0, self.height//2] = Tile(entry_road, height_map=self[0, self.height//2].height_map)
         self.redraw_entire_map()
 
     def iter(self) -> Generator[tuple[int, int, Tile], None, None]:

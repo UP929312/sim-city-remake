@@ -3,11 +3,10 @@ import random
 import numpy as np
 from perlin_noise import PerlinNoise  # type: ignore[import]
 
-from classes import (Tile, abandoned_tile, biome_to_tile, entry_road, lily_pad,
-                     shrub, tree, weeds)
+from classes import (Tile, abandoned_tile, entry_road, generate_tile_type,
+                     lily_pad, shrub, tree, weeds)
 from map_object import Map
-from utils import (DEFAULT_MAP_SETTINGS, VERSION, MapSettingsType, clip,
-                   get_neighbour_coords)
+from utils import VERSION, MapSettingsType, clip, get_neighbour_coords
 
 FLOORING_TO_PLANT = {
     "Grass": tree,
@@ -16,6 +15,10 @@ FLOORING_TO_PLANT = {
     "Gravel": weeds,
     "Water": lily_pad,
 }
+
+
+def height_map_calculation(noise: PerlinNoise, x: int, y: int, map_width: int, map_height: int) -> float:
+    return round(clip(noise([x/map_width, y/map_height]) * 3, -1, 1), 2)
 
 
 def generate_world(map_settings: MapSettingsType, seed: int | None = None) -> Map:
@@ -29,8 +32,8 @@ def generate_world(map_settings: MapSettingsType, seed: int | None = None) -> Ma
 
     for x in range(map_width):
         for y in range(map_height):
-            world[x, y].biome = clip(noise([x/map_width, y/map_height]) * 3, -1, 1) if map_settings["generate_biomes"] else -0.5
-            world[x, y].type = biome_to_tile(world[x, y].biome, include_water=map_settings["generate_lakes"])
+            world[x, y].height_map = height_map_calculation(noise, x, y, map_width, map_height) if map_settings["generate_biomes"] else -0.5
+            world[x, y].type = generate_tile_type(world[x, y].height_map, include_water=map_settings["generate_lakes"])
 
             if random.randint(1, 100) < map_settings["tree_density"]:
                 floor_name = world[x, y].type.name

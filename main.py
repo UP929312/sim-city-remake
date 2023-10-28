@@ -45,7 +45,7 @@ pause = False
 
 tool = "select"
 draw_style = "single"
-error_text = ""
+extra_text = ""
 
 views = (
     "general_view",
@@ -121,7 +121,7 @@ while True:
         # ---------------------------------------------------------
         # DRAWING - Bottom bar
         if tool == "select" and len(map[mouse_motion_tile_x, mouse_motion_tile_y].error_list) > 0:
-            error_text = map[mouse_motion_tile_x, mouse_motion_tile_y].error_list[0]
+            extra_text = map[mouse_motion_tile_x, mouse_motion_tile_y].error_list[0]
 
     # DRAWING - Side bar only happens on update
     # =========================================================
@@ -133,7 +133,8 @@ while True:
         # ----------------------------------------------------------
         if event.type == pygame.VIDEORESIZE:
             window.fill(BACKGROUND_COLOUR, rect=(0, 0, window.get_width()-ICON_SIZE, window.get_height()-ICON_SIZE))
-            map.redraw_entire_map()
+            x_offset, y_offset = reset_map(window, map)
+            generate_side_bar(tool, draw_style, icon_offset, window, map.settings)
         # ----------------------------------------------------------
         # KEY DOWN
         elif event.type == pygame.KEYDOWN:  # If they press a key
@@ -155,8 +156,8 @@ while True:
             elif event.key == pygame.K_f:
                 map[mouse_motion_tile_x, mouse_motion_tile_y].fire_ticks = 1  # type: ignore[index]
 
-            elif event.key == pygame.K_i:
-                print(f"{map.emergency_vehicles_on_route=}")  # {map.services=},
+            # elif event.key == pygame.K_i:
+            #     rint(f"{map.emergency_vehicles_on_route=}")  # {map.services=},
 
             elif event.key == pygame.K_e:
                 map.expand()
@@ -205,10 +206,14 @@ while True:
                         for prop in get_class_properties(map[x, y]):
                             print(f"main: {prop}: " + str(getattr(map[x, y], prop)))
                     elif tool == "destroy":
-                        map[x, y].type.on_destroy(map, x, y)
+                        message = map[x, y].type.on_destroy(map, x, y)
+                        if message is not None:
+                            extra_text = message
                     else:
                         tile_class = get_type_by_name(tool)
-                        tile_class.on_place(map, x, y)
+                        message = tile_class.on_place(map, x, y)
+                        if message is not None:
+                            extra_text = message
                     # -----------------------------------
                     map[x, y].error_list = []
 
@@ -247,12 +252,12 @@ while True:
 
         # CREATE
         for _ in range(ENTITIES_TO_CREATE_PER_TICK):
-            if len(entity_list) < preferences["max_" + ("vehicles" if entity_name == "Vehicle" else "people")]:  # type: ignore[literal-required]
+            if len(entity_list) < preferences["max_" + ("vehicles" if entity_name == "Vehicle" else "pedestrians")]:  # type: ignore[literal-required]
                 route_type = choice(["residential", "commercial", "industrial"])
                 entity_type.try_create(entity_type, map, route_type, rainbow_entities_enabled=preferences["rainbow_entities"])  # type: ignore[attr-defined]
     # =========================================================
-    generate_bottom_bar(window, map, view, run_counter, clock, error_text)
-    error_text = ""
+    generate_bottom_bar(window, map, view, run_counter, clock, extra_text)
+    extra_text = ""
 
     if not pause:
         run_counter += 1

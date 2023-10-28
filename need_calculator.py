@@ -48,33 +48,33 @@ def update_nearby_service_list(map: Map, x: int, y: int) -> None:
 def calculate_happiness(map: Map, x: int, y: int) -> int:
     return 5
 
-    nearby_parks = 0
-    nearby_services = {"FireStation": False, "Hospital": False, "PoliceStation": False}
+    # nearby_parks = 0
+    # nearby_services = {"FireStation": False, "Hospital": False, "PoliceStation": False}
 
-    has_water_neighbour = any(tile.type.name == "Water" for tile in map.get_neighbours(x, y))  # Waterfront property
-    has_grass_neighbour = any(tile.type.name == "Grass" for tile in map.get_neighbours(x, y))  # Nice big garden
-    has_cheap_taxes = map.settings["residential_tax_rate"] <= 0.1  # 10% Tax
+    # has_water_neighbour = any(tile.type.name == "Water" for tile in map.get_neighbours(x, y))  # Waterfront property
+    # has_grass_neighbour = any(tile.type.name == "Grass" for tile in map.get_neighbours(x, y))  # Nice big garden
+    # has_cheap_taxes = map.settings["residential_tax_rate"] <= 0.1  # 10% Tax
 
-    """
-    for _x, _y in map.nearby_amenities:
-        tile_type = map[_x, _y].type.name
-        if tile_type in nearby_amenities.keys():
-            nearby_services[tile_type] = True
-    """
-    # -------------------------------
+    # """
+    # for _x, _y in map.nearby_amenities:
+    #     tile_type = map[_x, _y].type.name
+    #     if tile_type in nearby_amenities.keys():
+    #         nearby_services[tile_type] = True
+    # """
+    # # -------------------------------
 
-    # '''
-    map[x, y].happiness_reasons = {
-        "has_water_neighbour": has_water_neighbour,
-        "has_grass_neighbour": has_grass_neighbour,
-        "has_cheap_taxes": has_cheap_taxes,
-        "nearby_services": sum(nearby_services.values()),
-        "nearby_parks": min(nearby_parks, 2),
-    }
+    # #
+    # map[x, y].happiness_reasons = {
+    #     "has_water_neighbour": has_water_neighbour,
+    #     "has_grass_neighbour": has_grass_neighbour,
+    #     "has_cheap_taxes": has_cheap_taxes,
+    #     "nearby_services": sum(nearby_services.values()),
+    #     "nearby_parks": min(nearby_parks, 2),
+    # }
 
-    # 1 for waterfront, 1 for big garden, up to 3 for unique services, up to 2 for two parks nearby
-    happiness = has_water_neighbour + has_grass_neighbour + has_cheap_taxes + sum(nearby_services.values()) + min(nearby_parks, 2)
-    return happiness
+    # # 1 for waterfront, 1 for big garden, up to 3 for unique services, up to 2 for two parks nearby
+    # happiness = has_water_neighbour + has_grass_neighbour + has_cheap_taxes + sum(nearby_services.values()) + min(nearby_parks, 2)
+    # return happiness
 
 
 """

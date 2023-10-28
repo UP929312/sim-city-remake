@@ -15,7 +15,7 @@ def go_back() -> NoReturn:
 
 # ================================================================================================================================
 def font_size_controller(text: str | int, x1: int, x2: int, y1: int, y2: int) -> int:
-    if not text:
+    if text == "":
         return 1
     return int(min((x2 - x1) / math.pow(len(str(text)), 0.8), (y2 - y1) * 0.8))
 
@@ -39,6 +39,10 @@ class Element:
                 else None)
 
     def draw(self, window: pygame.surface.Surface, vertical_scroll_offset: int) -> None:
+        if hasattr(self, "children"):
+            for child in self.children:  # pyright: ignore
+                child.draw(window, vertical_scroll_offset)
+            return
         raise NotImplementedError
 
 
@@ -134,10 +138,6 @@ class RowOfButtons(Element):
             for i, text in enumerate(text_items)
         ]
 
-    def draw(self, window: pygame.surface.Surface, vertical_scroll_offset: int) -> None:
-        for child in self.children:
-            child.draw(window, vertical_scroll_offset)
-
     def __str__(self) -> str:
         return super().__str__() + "\n" + "\n".join([f"    With child buttons: {self.children}"])
 
@@ -146,7 +146,7 @@ class ToggleRow(Element):
     def __init__(self, x1: int, y1: int, width: int, height: int, text: str, key: str, starting_value: bool | None) -> None:
         super().__init__(x1, y1, width, height, text)
         self.key = key
-        self.value = starting_value or False
+        self.value = starting_value
 
         # 40 : gap-10 : 10: gap-20 : 20 - Generate biomes : (Yes) Toggle
         section1, section2 = int(x1 + ((width) // 10) * 4), int(x1 + ((width) // 10) * 5)
@@ -156,13 +156,10 @@ class ToggleRow(Element):
 
         self.children: tuple[Label, Label, Button] = (self.name_label, self.toggled_label, self.toggle_button)
 
-    def draw(self, window: pygame.surface.Surface, vertical_scroll_offset: int) -> None:
-        for child in (self.name_label, self.toggled_label, self.toggle_button):
-            child.draw(window, vertical_scroll_offset)
-
-    def on_click(self, *_: Any) -> None:
+    def on_click(self, *_: Any) -> dict[str, bool]:
         self.value = not self.value
         self.toggled_label.text = "(Yes)" if self.value else "(No)"
+        return {self.key: self.value}
 
     def __str__(self) -> str:
         return (
@@ -181,37 +178,34 @@ class IntegerSelector(Element):
     ) -> None:
         super().__init__(x1, y1, width, height, text)
         self.key = key
-        self.value = starting_value or middle or (minimum + maximum) // 2
         self.minimum = minimum
         self.maximum = maximum
         self.big_step = big_step
         self.small_step = small_step
         self.middle = middle or (minimum + maximum) // 2
 
+        if starting_value is not None:  # Can't use or since it can be 0
+            self.value = starting_value
+        else:
+            self.value = middle or (minimum + maximum) // 2
+
         middle_height = height // 2
 
         self.name_label = Label(text, x1, y1-4, width * 0.25, middle_height)
-        self.value_label = Label(self.value, int(x1 + (width * 0.75)), y1-4, width * 0.25, middle_height)
+        self.value_label = Label(self.value, int(x1 + width * 0.75), y1-4, width * 0.25, middle_height)
         self.children: list[Label | Button] = [self.name_label, self.value_label]
         slot_size = width // 9
         for i, icon in enumerate(["<<", "<", "0", ">", ">>"]):
             button = Button(x1 + (slot_size * i * 2), y1 + middle_height, slot_size, middle_height, icon, self.on_click)
             self.children.append(button)
 
-    def draw(self, window: pygame.surface.Surface, vertical_scroll_offset: int) -> None:
-        for child in self.children:
-            child.draw(window, vertical_scroll_offset)
-
-    def on_click(self, _: pygame.surface.Surface, button: Button, *_1: Any) -> None:
+    def on_click(self, _: pygame.surface.Surface, button: Button, *_1: Any) -> dict[str, int]:
         if button.text == "<<":
             self.value = max(self.value - self.big_step, self.minimum)
         elif button.text == "<":
             self.value = max(self.value - self.small_step, self.minimum)
         elif button.text == "0":
-            if self.middle:
-                self.value = self.middle
-            else:
-                self.value = (self.minimum + self.maximum) // 2
+            self.value = self.middle
         elif button.text == ">":
             self.value = min(self.maximum, self.value + self.small_step)
         elif button.text == ">>":
@@ -219,12 +213,13 @@ class IntegerSelector(Element):
         else:
             raise IndexError(f"Uh oh, IntegerSelector recieved something outside of it's normal, it recieved: {button.text}")
         self.value_label.text = str(self.value)
+        return {self.key: self.value}
 
-    def intersected(self, x: int, y: int) -> Button | None:  # type: ignore[return]
-        if super().intersected(x, y):
-            for button in self.children[2:]:
-                if button.intersected(x, y):
-                    return button  # type: ignore[return-value]
+    def intersected(self, x: int, y: int) -> Button | None:
+        for button in self.children[2:]:
+            if button.intersected(x, y):
+                return button  # type: ignore[return-value]
+        return None
 
     def __str__(self) -> str:
         return (
@@ -236,7 +231,8 @@ class IntegerSelector(Element):
 class SliderElement(Element):
     def __init__(self, x1: int, y1: int, width: int, height: int, starting_value: int | None = None, minimum: int = 0, maximum: int = 100) -> None:
         super().__init__(x1, y1, width, height, text="")
-        self.value = starting_value or (minimum + maximum) // 2
+        # Can't use or since starting_value can be 0
+        self.value = starting_value if starting_value is not None else ((minimum + maximum) // 2)
         self.x1 = x1
         self.y1 = y1
         self.width = width
@@ -257,32 +253,30 @@ class SliderElement(Element):
         self.slider_button.draw(window, vertical_scroll_offset)
         pygame.draw.rect(window, (80, 80, 80), rect=(self.x1 + width_in, vertical_scroll_offset+self.y1 - (int(self.height / 1.3)), self.width // 20, self.height * 2))
 
-    def intersected(self, x: int, y: int) -> Button | None:  # type: ignore[return]
-        if self.slider_button.intersected(x, y):
-            return self.slider_button
+    def intersected(self, x: int, y: int) -> Button | None:
+        return self.slider_button.intersected(x, y)  # type: ignore[no-any-return]
 
 
 class SliderRow(Element):
-    def __init__(self, x1: int, y1: int, width: int, height: int, text: str, starting_value: int | None = None, minimum: int = 0, maximum: int = 100) -> None:
+    def __init__(self, x1: int, y1: int, width: int, height: int, text: str, key: str, starting_value: int | None = None, minimum: int = 0, maximum: int = 100) -> None:
         super().__init__(x1, y1, width, height, text)
+        self.key = key  # Used for notifying of updates
 
         self.name_label = Label(text, x1, y1, width * 0.3, height // 2)
         self.slider_element = SliderElement(x1 + width // 2, y1 + height // 4, width // 2, height // 4, starting_value, minimum, maximum)
         self.value_label = Label(self.slider_element.value, int(x1 + (width * 0.25)), y1, width * 0.25, height // 2)
 
+        self.children = (self.name_label, self.slider_element, self.value_label)
+
     def on_click(self, *_) -> None:  # type: ignore[no-untyped-def]
         pass  # Sigh, I never thought I'd get to this, but without this function/pass, it doesn't work
 
-    def intersected(self, x: int, y: int) -> Button | None:  # type: ignore[return]
-        if self.slider_element.intersected(x, y):
-            return self.slider_element.slider_button
+    def intersected(self, x: int, y: int) -> Button | None:
+        return self.slider_element.intersected(x, y)
 
     def draw(self, window: pygame.surface.Surface, vertical_scroll_offset: int) -> None:
         self.value_label.text = str(self.slider_element.value)
-
-        self.name_label.draw(window, vertical_scroll_offset)
-        self.value_label.draw(window, vertical_scroll_offset)
-        self.slider_element.draw(window, vertical_scroll_offset)
+        super().draw(window, vertical_scroll_offset)
 
 
 class TextEntry(Element):

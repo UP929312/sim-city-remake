@@ -4,8 +4,8 @@ from typing import Any, NoReturn
 
 import pygame
 
-from file_manager import (PreferencesType, load_game, load_preferences,
-                          save_game, save_preferences)
+from file_manager import (load_game, load_preferences, save_game,
+                          save_preferences)
 from generate_world import generate_world
 from map_object import Map
 from menu_elements import (BACK_BUTTON, Button, GoBack, IntegerSelector, Label,
@@ -25,25 +25,26 @@ def margins(window: pygame.Surface) -> tuple[int, int, int, int]:
 
 
 def load_game_menu(window: pygame.surface.Surface, *_: Any) -> str:
-    button_height = window.get_height() * 0.1
+    button_height = 64
     element_width, top_margin, left_margin, right_margin = margins(window)
+    num_of_saves_displayed = int((window.get_height()-(window.get_height()//5))//(button_height*2))
 
-    def generate_save_slice(offset: int) -> tuple[tuple[Button, ...], int]:
+    def generate_save_slice(offset: int, num_of_saves_displayed: int) -> tuple[tuple[Button, ...], int]:
         save_names = [file for file in sorted(listdir("saves")) if file.endswith(".simcity")]
         save_buttons = [
-            Button(left_margin - 32, top_margin + i * 110, element_width, button_height, save_name, lambda window, button, *_: button.text)
-            for i, save_name in enumerate(save_names[offset : offset + 5])
+            Button(left_margin - 32, top_margin + i * (button_height * 2), element_width, button_height, save_name, lambda _, button, *_1: button.text)
+            for i, save_name in enumerate(save_names[offset : offset + num_of_saves_displayed])
         ]
         return tuple(save_buttons), len(save_names)
 
     offset = 0
     while True:
         # Purposefully doesn't catch GoBack so that the parent menu can catch it.
-        save_buttons, num_of_saves = generate_save_slice(offset)  # Recalculate the offsetted saves each update
+        save_buttons, num_of_saves = generate_save_slice(offset, num_of_saves_displayed)  # Recalculate the offsetted saves each update
         elements = [BACK_BUTTON, *save_buttons]
-        if num_of_saves > 5:
+        if num_of_saves > num_of_saves_displayed:
             elements.append(Button(right_margin, top_margin, button_height, button_height, "^", lambda *_: max(0, offset - 1)))
-            elements.append(Button(right_margin, top_margin + (110 * 4), button_height, button_height, "V", lambda *_: min(offset + 1, num_of_saves - 5)))
+            elements.append(Button(right_margin, top_margin + ((button_height * 2) * (num_of_saves_displayed-1)), button_height, button_height, "V", lambda *_: min(offset + 1, num_of_saves - 5)))
 
         result = handle_menu(window, "Saves:", elements)
         if isinstance(result, int):  # Changing the offset
@@ -55,6 +56,10 @@ def load_game_menu(window: pygame.surface.Surface, *_: Any) -> str:
 
 
 def world_settings_menu(window: pygame.surface.Surface, *_: Any) -> MapSettingsType:
+    """
+    Returns a list of world settings to create a new world with
+    """
+
     element_width, top_margin, left_margin, _ = margins(window)  # type: ignore[assignment]
     map_settings = DEFAULT_MAP_SETTINGS
     elements: list[ToggleRow | IntegerSelector | Button] = [
@@ -74,10 +79,9 @@ def world_settings_menu(window: pygame.surface.Surface, *_: Any) -> MapSettingsT
     ]
 
     while True:
-        if handle_menu(window, "World", elements) is not None:
-            new_map_settings: MapSettingsType = map_settings | {x.key: x.value for x in elements if hasattr(x, "key")}  # type: ignore[union-attr, assignment]
-            # new_map_settings["map_height"] = new_map_settings["map_width"]
-            return new_map_settings
+        if (result := handle_menu(window, "World", elements)) is not None:
+            if result == "New game":
+                return map_settings | {x.key: x.value for x in elements if hasattr(x, "key")}  # type: ignore[union-attr, return-value]
 
 
 def settings_menu(window: pygame.surface.Surface, *_: Any) -> NoReturn:
@@ -88,16 +92,15 @@ def settings_menu(window: pygame.surface.Surface, *_: Any) -> NoReturn:
         BACK_BUTTON,
         ToggleRow(left_margin, top_margin + 10, element_width, 64, "Rainbow Entities", "rainbow_entities", prefs["rainbow_entities"]),
         ToggleRow(left_margin, top_margin + 10+128, element_width, 64, "Old Town Roads", "old_roads", prefs["old_roads"]),
-        IntegerSelector(left_margin, top_margin + 10+256, element_width, 128, "Max Vehicles", "max_vehicles", prefs["max_vehicles"], maximum=1000),
-        IntegerSelector(left_margin, top_margin + 10+384, element_width, 128, "Max People", "max_people", prefs["max_people"], maximum=1000),
+        IntegerSelector(left_margin, top_margin + 10+256, element_width, 128, "Max Vehicles", "max_vehicles", prefs["max_vehicles"], maximum=200),
+        IntegerSelector(left_margin, top_margin + 10+384, element_width, 128, "Max Pedestrians", "max_pedestrians", prefs["max_pedestrians"], minimum=0, maximum=100),
     ]
 
     while True:
         # Purposefully doesn't catch GoBack so that the parent menu can catch it.
-        handle_menu(window, "Settings", elements)
-        new_prefs: PreferencesType = prefs | {x.key: x.value for x in elements if hasattr(x, "key")}  # type: ignore[union-attr, assignment]
-        print(new_prefs)
-        save_preferences(new_prefs)
+        new_pref = handle_menu(window, "Settings", elements)
+        prefs |= new_pref
+        save_preferences(prefs)
 
 
 # ================================================================================================================================
@@ -114,15 +117,14 @@ def draw_main_menu(window: pygame.surface.Surface, *_: Any) -> Map:
 
     while True:
         try:
-            result = handle_menu(window, "Main Menu", elements)
+            result: None | str | MapSettingsType = handle_menu(window, "Main Menu", elements)
         except GoBack:
             pass  # This forces the next iteration of the while True loop, going back to the main menu,
             # Basically, we break out the while loop in the handle_menu's submenu to get back here
         else:
             if result is not None:  # result will be dict of map settings or a save name
                 if isinstance(result, dict):
-                    return generate_world(result)  # type: ignore[arg-type]
-
+                    return generate_world(result)
                 return load_game(result)
 
 
@@ -153,7 +155,7 @@ def save_world_window(window: pygame.surface.Surface, world: Map, *_: Any) -> st
                 elif event.key == pygame.K_BACKSPACE:
                     if len(text) > 0:
                         text = text[:-1]
-                elif len(text) < 15 and event.unicode in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-":
+                elif len(text) < (32-len(".simcity")) and event.unicode in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-":
                     text += event.unicode
 
             text_entry.text = text
@@ -187,16 +189,15 @@ def draw_pause_menu(window: pygame.surface.Surface, world: Map) -> Map | None:
 
 def draw_policy_screen(window: pygame.surface.Surface, settings: MapSettingsType) -> MapSettingsType:
     element_width, top_margin, left_margin, _ = margins(window)
-    buttons: list[Button | SliderRow] = [
+    elements: list[Button | SliderRow] = [
         BACK_BUTTON,
-        SliderRow(left_margin, top_margin, element_width, 128, "Residential Tax", starting_value=settings["residential_tax_rate"], maximum=100),
-        SliderRow(left_margin, top_margin + 128, element_width, 128, "Commercial Tax", starting_value=settings["commercial_tax_rate"], maximum=100),
-        SliderRow(left_margin, top_margin + 256, element_width, 128, "Industrial Tax", starting_value=settings["industrial_tax_rate"], maximum=100),
+        SliderRow(left_margin, top_margin, element_width, 128, "Residential Tax", key="residential_tax_rate", starting_value=settings["residential_tax_rate"], maximum=100),
+        SliderRow(left_margin, top_margin + 128, element_width, 128, "Commercial Tax", key="commercial_tax_rate", starting_value=settings["commercial_tax_rate"], maximum=100),
+        SliderRow(left_margin, top_margin + 256, element_width, 128, "Industrial Tax", key="industrial_tax_rate", starting_value=settings["industrial_tax_rate"], maximum=100),
         Button(left_margin, top_margin + 384 + 64, element_width, 64, "Done", lambda *_: go_back()),
     ]
     while True:
         try:
-            handle_menu(window, "Policies", buttons)
+            handle_menu(window, "Policies", elements)
         except GoBack:
-            settings = settings | {x.key: x.value for x in buttons if hasattr(x, "key")}  # type: ignore[assignment, union-attr]
-            return settings
+            return settings | {x.key: x.slider_element.value for x in elements if hasattr(x, "key")}  # type: ignore[union-attr, return-value]
