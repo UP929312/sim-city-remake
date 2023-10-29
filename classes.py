@@ -78,7 +78,7 @@ class GenericTile:
         pygame.draw.rect(window, tile_colour, (*pos, TILE_WIDTH, TILE_WIDTH))
 
     def get_general_view_texture(self, map: Map, x: int, y: int, old_roads: bool) -> pygame.Surface:  # Leave types for typing.
-        return IMAGES[self.general_view_image].convert_alpha()
+        return IMAGES[self.general_view_image].convert()
         # return rot_center(IMAGES[self.general_view_image].convert_alpha(), 0 if not self.random_rotation else 90*((x*1111 + y*3)%4))
 
     def draw_nearest_services(self, _: Tile) -> COLOUR_TYPE:
