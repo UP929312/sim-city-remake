@@ -4,6 +4,9 @@ from typing import Any, Callable, NoReturn, TypeVar
 
 import pygame
 
+pygame.font.init()
+fonts = {size: pygame.font.SysFont("Comic Sans MS", size) for size in range(1, 120)}
+
 
 class GoBack(Exception):
     pass
@@ -58,7 +61,7 @@ class Label(Element):
         self.center_y = int(y1 + height // 2)
 
     def draw(self, window: pygame.surface.Surface, vertical_scroll_offset: int) -> None:
-        font = pygame.font.SysFont("Comic Sans MS", self.font_size)
+        font = fonts[self.font_size]
         text_rendered = font.render(str(self.text), False, self.text_colour)
         text_rect = text_rendered.get_rect(center=(self.center_x, self.center_y+vertical_scroll_offset))
         window.blit(text_rendered, text_rect)

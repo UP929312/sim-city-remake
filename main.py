@@ -15,17 +15,16 @@ from overlays import generate_bottom_bar, generate_side_bar
 from utils import (BACKGROUND_COLOUR, DESIRED_FPS, ICON_SIZE, IMAGES,
                    TICK_RATE, TILE_WIDTH, VERSION, MapSettingsType,
                    convert_mouse_pos_to_coords, coords_to_screen_pos,
-                   get_all_grid_coords, get_class_properties, reset_map,
-                   tile_is_in_world)
+                   get_all_grid_coords, get_class_properties, reset_map)
 
 # https://www.freepik.com/search?format=search&query=fire%20station%20icon%20pixel%20art
 print("main: Starting")
 # ============================
 # Pygame inits
 pygame.display.init()
-window = pygame.display.set_mode((1710, 870), pygame.RESIZABLE)  # Used to be 800, 800
+window = pygame.display.set_mode((1710, 870), pygame.RESIZABLE)  # | pygame.DOUBLEBUF | pygame.HWSURFACE)  # Doublebuf+HWSURFACE is for performance
+window.set_alpha(None)  # This is for performance
 pygame.display.set_caption(f"Sim City {'.'.join([str(x) for x in VERSION])}")
-pygame.font.init()
 pygame.event.set_allowed([pygame.QUIT, pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN,
                           pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION, pygame.VIDEORESIZE])
 # ============================
@@ -107,11 +106,9 @@ while True:
             tile.redraw = True
             tile.fire_ticks += 1
     # ---------------------------------------------------------
-    if tile_is_in_world(map, window, mouse_motion_tile_x, mouse_motion_tile_y):
-        assert mouse_motion_tile_x is not None and mouse_motion_tile_y is not None
+    if mouse_motion_tile_x is not None and mouse_motion_tile_y is not None:
         # GENERATE DRAG GRID
-        if pygame.mouse.get_pressed()[0] and tile_is_in_world(map, window, mouse_down_tile_x, mouse_down_tile_y):
-            assert mouse_down_tile_x is not None and mouse_down_tile_y is not None
+        if pygame.mouse.get_pressed()[0] and mouse_down_tile_x is not None and mouse_down_tile_y is not None:
             for x, y in get_all_grid_coords(mouse_down_tile_x, mouse_down_tile_y, mouse_motion_tile_x, mouse_motion_tile_y, single_place=draw_style == "single"):
                 window.blit(IMAGES["dragged_square"].convert_alpha(), coords_to_screen_pos(x, y, x_offset, y_offset))
                 map[x, y].redraw = True
@@ -138,10 +135,7 @@ while True:
         # ----------------------------------------------------------
         # KEY DOWN
         elif event.type == pygame.KEYDOWN:  # If they press a key
-            if event.key == pygame.K_SPACE:
-                pause = not pause
-
-            elif event.key == pygame.K_q:  # Re-center map
+            if event.key == pygame.K_q:  # Re-center map
                 x_offset, y_offset = reset_map(window, map)
                 generate_side_bar(tool, draw_style, icon_offset, window, map.settings)
 
@@ -152,6 +146,12 @@ while True:
 
             elif event.key == pygame.K_m:  # Dev tool for testing
                 map.cash = 999999
+
+            elif event.key == pygame.K_i:
+                print(map.width, map.height)
+
+            elif event.key == pygame.K_p:
+                pause = not pause
 
             elif event.key == pygame.K_f:
                 map[mouse_motion_tile_x, mouse_motion_tile_y].fire_ticks = 1  # type: ignore[index]
@@ -178,7 +178,7 @@ while True:
         # MOUSE DOWN
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_LEFT:  # When they click the button
             mouse_down_x, mouse_down_y = pygame.mouse.get_pos()
-            mouse_down_tile_x, mouse_down_tile_y = convert_mouse_pos_to_coords(mouse_down_x, mouse_down_y, x_offset, y_offset)
+            mouse_down_tile_x, mouse_down_tile_y = convert_mouse_pos_to_coords(mouse_down_x, mouse_down_y, x_offset, y_offset, map, window)
 
             right_bar_result: None | tuple[str, str, int, MapSettingsType] = handle_collisions(window, mouse_down_x, mouse_down_y, side_bar_elements, 0)
             if right_bar_result is not None:
@@ -195,10 +195,9 @@ while True:
         # MOUSE UP
         elif event.type == pygame.MOUSEBUTTONUP and event.button == pygame.BUTTON_LEFT:  # When they release the mouse button
             mouse_up_x, mouse_up_y = pygame.mouse.get_pos()
-            mouse_up_tile_x, mouse_up_tile_y = convert_mouse_pos_to_coords(mouse_up_x, mouse_up_y, x_offset, y_offset)
+            mouse_up_tile_x, mouse_up_tile_y = convert_mouse_pos_to_coords(mouse_up_x, mouse_up_y, x_offset, y_offset, map, window)
 
-            if tile_is_in_world(map, window, mouse_up_tile_x, mouse_up_tile_y) and tile_is_in_world(map, window, mouse_down_tile_x, mouse_down_tile_y):
-                assert mouse_down_tile_x is not None and mouse_down_tile_y is not None
+            if mouse_up_tile_x is not None and mouse_up_tile_y is not None and mouse_down_tile_x is not None and mouse_down_tile_y is not None:
                 for x, y in get_all_grid_coords(mouse_down_tile_x, mouse_down_tile_y, mouse_up_tile_x, mouse_up_tile_y, single_place=draw_style == "single"):
                     if tool == "select":
                         map[x, y].type.on_random_tick(map, x, y)
@@ -226,7 +225,7 @@ while True:
         # MOUSE MOTION
         elif event.type == pygame.MOUSEMOTION:  # This is for writing the error (when the user moves the mouse over an error square)
             mouse_motion_x, mouse_motion_y = pygame.mouse.get_pos()
-            mouse_motion_tile_x, mouse_motion_tile_y = convert_mouse_pos_to_coords(mouse_motion_x, mouse_motion_y, x_offset, y_offset)
+            mouse_motion_tile_x, mouse_motion_tile_y = convert_mouse_pos_to_coords(mouse_motion_x, mouse_motion_y, x_offset, y_offset, map, window)
 
     # =========================================================
     # ENTITY HANDLING HANDLING

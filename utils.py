@@ -66,9 +66,9 @@ def rot_center(image: pygame.surface.Surface, angle: int) -> pygame.surface.Surf
 
 
 IMAGES: dict[str, pygame.surface.Surface] = {}
-for image_name in listdir("images"):
-    if image_name.endswith(".png"):
-        IMAGES[image_name.removesuffix(".png")] = pygame.image.load("images/" + image_name)  # TODO: This: .convert_alpha()
+for images, subdirectory in [(listdir("images/icons"), "icons"), (listdir("images/tiles"), "tiles"), ([x for x in listdir("images/") if x.endswith(".png")], "")]:
+    for image_name in images:
+        IMAGES[image_name.removesuffix(".png")] = pygame.image.load(f"images/{subdirectory}/{image_name}")  # TODO: This: .convert()
 for road_image in listdir("images/roads"):
     for rotation in [0, 90, 180, 270, 360]:
         IMAGES["roads/" + road_image.removesuffix(".png") + f"_rotation_{rotation}"] = rot_center(pygame.image.load("images/roads/" + road_image), rotation)
@@ -82,17 +82,6 @@ with open("name_list.txt", "r", encoding="utf-8") as file:
 
 def get_random_name() -> str:
     return choice(people_names)
-
-
-def tile_is_in_world(map: Map, window: pygame.surface.Surface, mouse_tile_x: int | None, mouse_tile_y: int | None) -> bool:
-    return (
-        mouse_tile_x is not None
-        and mouse_tile_y is not None
-        and 0 <= mouse_tile_x < map.width
-        and 0 <= mouse_tile_y < map.height
-        # and mouse_tile_x < window.get_width() - ICON_SIZE  # Need offset and stuff
-        # and mouse_tile_y < window.get_height() - ICON_SIZE  # Need offset and stuff
-    )
 
 
 def clip(num: int | float, minimum: int, maximum: int) -> int:
@@ -155,8 +144,13 @@ def reset_map(window: pygame.surface.Surface, map: Map) -> tuple[int, int]:
     return x_offset, y_offset
 
 
-def convert_mouse_pos_to_coords(x: int, y: int, x_offset: int, y_offset: int) -> tuple[int, int]:
-    return (x-x_offset) // TILE_WIDTH, (y-y_offset) // TILE_WIDTH
+def convert_mouse_pos_to_coords(x: int, y: int, x_offset: int, y_offset: int, map: Map, window: pygame.surface.Surface) -> tuple[int, int] | tuple[None, None]:
+    if x is None or y is None or x > (window.get_width() - ICON_SIZE*1.5) or y > (window.get_height() - ICON_SIZE*1.5):
+        return None, None
+    tile_x, tile_y = (x-x_offset) // TILE_WIDTH, (y-y_offset) // TILE_WIDTH
+    if not (0 <= tile_x < map.width and 0 <= tile_y < map.height):
+        return None, None
+    return tile_x, tile_y
 
 
 def coords_to_screen_pos(x: int, y: int, x_offset: int, y_offset: int) -> tuple[int, int]:

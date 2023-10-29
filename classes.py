@@ -79,7 +79,7 @@ class GenericTile:
 
     def get_general_view_texture(self, map: Map, x: int, y: int, old_roads: bool) -> pygame.Surface:  # Leave types for typing.
         return IMAGES[self.general_view_image].convert()
-        # return rot_center(IMAGES[self.general_view_image].convert_alpha(), 0 if not self.random_rotation else 90*((x*1111 + y*3)%4))
+        # return rot_center(IMAGES[self.general_view_image].convert(), 0 if not self.random_rotation else 90*((x*1111 + y*3)%4))
 
     def draw_nearest_services(self, _: Tile) -> COLOUR_TYPE:
         return self.base_colour
@@ -592,6 +592,7 @@ class Tile:
         self.error_list: list[str] = []
         self.service_routes: dict[str, list[tuple[int, int]]] = {}
         # self.temporarily_blocked = False
+        self.road = 0  # This is just to keep mypy happy
 
     def __repr__(self) -> str:
         return f"Tile({self.type.name=}, {self.biome=}, {self.height_map=}, {self.quality=}, {self.water=}, {self.density=}, {self.level=}, {self.happiness=}, {self.people_inside=}, {self.fire_ticks=})"
