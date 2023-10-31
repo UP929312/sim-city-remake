@@ -74,7 +74,8 @@ def generate_bottom_bar(
     mouse_tile_x: int | None, mouse_tile_y: int | None, mouse_x: int | None, mouse_y: int | None,
     fading_text_element: FadingTextBottomButton,
 ) -> None:
-    bottom_row = BottomRow(0, window.get_height() - ICON_SIZE, window.get_width()-ICON_SIZE, ICON_SIZE,
+    bottom_row = BottomRow(
+        0, window.get_height() - ICON_SIZE, window.get_width()-ICON_SIZE, ICON_SIZE,
         f"Cash: {map.cash}  "
         f"{view.removesuffix('_view').capitalize()}  "
         f"FPS: {int(clock.get_fps())}  "

@@ -79,9 +79,8 @@ def world_settings_menu(window: pygame.surface.Surface, *_: Any) -> MapSettingsT
     ]
 
     while True:
-        if (result := handle_menu(window, "World", elements)) is not None:
-            if result == "New game":
-                return map_settings | {x.key: x.value for x in elements if hasattr(x, "key")}  # type: ignore[union-attr, return-value]
+        if handle_menu(window, "World", elements) == "New game":
+            return map_settings | {x.key: x.value for x in elements if hasattr(x, "key")}  # type: ignore[union-attr, return-value]
 
 
 def settings_menu(window: pygame.surface.Surface, *_: Any) -> NoReturn:
@@ -97,11 +96,11 @@ def settings_menu(window: pygame.surface.Surface, *_: Any) -> NoReturn:
     ]
 
     while True:
-        # Purposefully doesn't catch GoBack so that the parent menu can catch it.
-        new_pref = handle_menu(window, "Settings", elements)
-        prefs |= new_pref
-        save_preferences(prefs)
-
+        try:
+            handle_menu(window, "Settings", elements)
+        except GoBack:
+            save_preferences(prefs | {x.key: x.value for x in elements if hasattr(x, "key")})  # type: ignore[union-attr, arg-type]
+            raise GoBack
 
 # ================================================================================================================================
 
@@ -119,13 +118,13 @@ def draw_main_menu(window: pygame.surface.Surface, *_: Any) -> Map:
         try:
             result: None | str | MapSettingsType = handle_menu(window, "Main Menu", elements)
         except GoBack:
-            pass  # This forces the next iteration of the while True loop, going back to the main menu,
+            continue  # This forces the next iteration of the while True loop, going back to the main menu,
             # Basically, we break out the while loop in the handle_menu's submenu to get back here
-        else:
-            if result is not None:  # result will be dict of map settings or a save name
-                if isinstance(result, dict):
-                    return generate_world(result)
-                return load_game(result)
+
+        if result is not None:  # result will be dict of map settings or a save name
+            if isinstance(result, dict):
+                return generate_world(result)
+            return load_game(result)
 
 
 # ===============================================================================================================================

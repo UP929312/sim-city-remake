@@ -40,9 +40,6 @@ The route cache doesn't work, it just dies after a while, maybe I could even bak
 Change biome to be height map, and then use biome for snow, sand, that kind of thing
 For old maps, regenerate a new set of biome and height_map values
 
-God damnnit, menus un-scroll in the create world menu
-
-Expansion stuff, i.e. on one side, floating text, basically like prison architect, and hover colour | WORK IN PROGRESS
 Instead of random key binds, a dev menu with more buttons and stuff
 
 A dev fire button, maybe even a dev toggle which enables the fire and stuff?

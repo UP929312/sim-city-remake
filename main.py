@@ -147,9 +147,6 @@ while True:
             elif event.key == pygame.K_m:  # Dev tool for testing
                 map.cash = 999999
 
-            elif event.key == pygame.K_i:
-                print(map.width, map.height)
-
             elif event.key == pygame.K_p:
                 pause = not pause
 
@@ -191,15 +188,14 @@ while True:
 
             vehicles = [x for x in map.entity_lists["Vehicle"] if x.current_loc == (mouse_down_tile_x, mouse_down_tile_y)]
             if vehicles:
-                print("main:", str(vehicles[0]))
+                fading_text_element.add_to_queue(str(vehicles[0]))
 
             for rectangle in expansion_rectangles:
-                if rectangle.intersected(mouse_down_x-x_offset, mouse_down_y-y_offset):                   
+                if rectangle.intersected(mouse_down_x-x_offset, mouse_down_y-y_offset):
                     if (rectangle.width*rectangle.height) // TILE_WIDTH > map.cash:
-                        print("main: Not enough cash")
                         fading_text_element.add_to_queue("Not enough cash")
                     else:
-                        print("Expanding in direction:", rectangle.text)
+                        fading_text_element.add_to_queue(f"Expanding in direction: {rectangle.text}")
                         map.expand(rectangle.text)  # type: ignore[arg-type]
                         map.cash -= (rectangle.width*rectangle.height) // TILE_WIDTH
                         _, _, expansion_rectangles = map.reset_map(window)
@@ -219,13 +215,11 @@ while True:
                             print(f"main: {prop}: " + str(getattr(map[x, y], prop)))
                     elif tool == "destroy":
                         message = map[x, y].type.on_destroy(map, x, y)
-                        if message is not None:
-                            fading_text_element.add_to_queue(message)
+                        fading_text_element.add_to_queue(message)
                     else:
                         tile_class = get_type_by_name(tool)
                         message = tile_class.on_place(map, x, y)
-                        if message is not None:
-                            fading_text_element.add_to_queue(message)
+                        fading_text_element.add_to_queue(message)
                     # -----------------------------------
                     map[x, y].error_list = []
 
@@ -280,7 +274,7 @@ while True:
         run_counter += 1
 
     for i in range(TICK_RATE):
-        x, y = randint(1, map.width - 1), randint(1, map.height - 1)  # Can't remember why I exclude the outer edge, probably some crashing issue
+        x, y = randint(0, map.width-1), randint(0, map.height-1)  # randint excludes the last number, so we need to do -1
         map[x, y].type.on_random_tick(map, x, y)
 
     pygame.display.update()

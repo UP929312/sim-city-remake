@@ -194,7 +194,7 @@ class Map:
         self.tiles = np.roll(self.tiles, axis=DIRECTION_TO_SHIFT[direction][0], shift=DIRECTION_TO_SHIFT[direction][1])  # type: ignore[call-overload]
         for (x, y, tile) in self.iter():
             if tile is None:
-                 self.reset_tile(x, y)
+                self.reset_tile(x, y)
         # === We need to create a new entry road too.
         self[0, self.height//2].type = entry_road
 

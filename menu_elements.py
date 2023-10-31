@@ -144,7 +144,9 @@ class FadingTextBottomButton(BottomButton):
         label = Label(self.queue.pop(), self.x1, self.y1, self.width, self.height, text_colour=(255, 255, 0))
         label.draw(window, horizontal_scroll_offset, vertical_scroll_offset)
 
-    def add_to_queue(self, text: str) -> None:
+    def add_to_queue(self, text: str | None) -> None:
+        if text is None:
+            return
         if not self.queue:
             self.queue.extend([text]*DESIRED_FPS*1)
 
@@ -166,6 +168,7 @@ class BottomRow(Element):
         else:
             self.bottom_text.draw(window, 0, 0)
 
+
 class ToggleRow(Element):
     def __init__(self, x1: int, y1: int, width: int, height: int, text: str, key: str, starting_value: bool | None) -> None:
         super().__init__(x1, y1, width, height, text)
@@ -180,10 +183,10 @@ class ToggleRow(Element):
 
         self.children: tuple[Label, Label, Button] = (self.name_label, self.toggled_label, self.toggle_button)  # type: ignore[assignment]
 
-    def on_click(self, *_: Any) -> dict[str, bool]:
+    def on_click(self, *_: Any) -> None:
         self.value = not self.value
         self.toggled_label.text = "(Yes)" if self.value else "(No)"
-        return {self.key: self.value}
+        # return {self.key: self.value}
 
     def __str__(self) -> str:
         return (
@@ -223,7 +226,7 @@ class IntegerSelector(Element):
             button = Button(x1 + (slot_size * i * 2), y1 + middle_height, slot_size, middle_height, icon, self.on_click)
             self.children.append(button)
 
-    def on_click(self, _: pygame.surface.Surface, button: Button, *_1: Any) -> dict[str, int]:
+    def on_click(self, _: pygame.surface.Surface, button: Button, *_1: Any) -> None:
         if button.text == "<<":
             self.value = max(self.value - self.big_step, self.minimum)
         elif button.text == "<":
@@ -235,9 +238,8 @@ class IntegerSelector(Element):
         elif button.text == ">>":
             self.value = min(self.maximum, self.value + self.big_step)
         else:
-            raise IndexError(f"Uh oh, IntegerSelector recieved something outside of it's normal, it recieved: {button.text}")
+            raise IndexError(f"Uh oh, {self.__class__.__name__} recieved something outside of it's normal, it recieved: {button.text}")
         self.value_label.text = str(self.value)
-        return {self.key: self.value}
 
     def intersected(self, x: int, y: int) -> Button | None:
         for button in self.children[2:]:
