@@ -3,18 +3,23 @@ from random import choice
 from typing import TYPE_CHECKING, Any, Generator, Literal
 
 import numpy as np
+import pygame
 from pathfinding.core.grid import Grid  # type: ignore[import]
 from pathfinding.finder.best_first import BestFirst  # type: ignore[import]
 
 from classes import ROADS, Tile, entry_road, generate_tile_type
 from entities import EntityList
-from utils import MapSettingsType, get_neighbour_coords
+from expansion import (DIRECTION_TO_COORDS, DIRECTION_TO_SHIFT,
+                       generate_expansion_rectangles)
+from utils import (BACKGROUND_COLOUR, ICON_SIZE, TILE_WIDTH, MapSettingsType,
+                   get_neighbour_coords)
 
 sys.setrecursionlimit(1500)  # 1200 used to be the limit, now it's not
 
 
 if TYPE_CHECKING:
     from entities import Vehicle
+    from menu_elements import HighlightableRectangle
 
 # map.road:
 # 0 = Not a read
@@ -172,26 +177,44 @@ class Map:
                 if ROAD_NOT_CONNECTED not in tile.error_list:
                     tile.error_list.append(ROAD_NOT_CONNECTED)
 
-    def expand(self) -> None:
-        # === We need to move the current entry road, we replace it later on
-        current_entry_road = self[0, self.height//2]
-        tile_type = generate_tile_type(current_entry_road.height_map, include_water=self.settings["generate_lakes"])
-        self[0, self.height//2] = Tile(tile_type, height_map=current_entry_road.height_map)
-        # ===
-        self.settings["map_width"] += 2  # 1 on each side
-        self.settings["map_height"] += 2
-        self.tiles = np.pad(self.tiles, 1, mode="edge")  # type: ignore[call-overload]
-        for (x, y, _) in self.iter():
-            if x == 0 or y == 0 or x == self.width - 1 or y == self.height - 1:
-                self[x, y] = Tile()
+    def reset_tile(self, x: int, y: int) -> None:
+        if self[x, y] is None:
+            self[x, y] = Tile()
+        self[x, y] = Tile(generate_tile_type(self[x, y].height_map, include_water=self.settings["generate_lakes"]), height_map=self[x, y].height_map)
 
-        self[0, self.height//2] = Tile(entry_road, height_map=self[0, self.height//2].height_map)
-        self.redraw_entire_map()
+    def expand(self, direction: str = "all") -> None:
+        if direction == "all":
+            return self.expand("left") or self.expand("right") or self.expand("top") or self.expand("bottom")  # type: ignore[no-any-return, func-returns-value]
+        # === We need to move the current entry road, we replace it later on
+        self.reset_tile(0, self.height//2)
+        # ===
+        self.settings["map_width"] += 1 if direction in ["left", "right"] else 0
+        self.settings["map_height"] += 1 if direction in ["top", "bottom"] else 0
+        self.tiles = np.pad(self.tiles, pad_width=DIRECTION_TO_COORDS[direction], mode="constant", constant_values=None)  # type: ignore[call-overload]
+        self.tiles = np.roll(self.tiles, axis=DIRECTION_TO_SHIFT[direction][0], shift=DIRECTION_TO_SHIFT[direction][1])  # type: ignore[call-overload]
+        for (x, y, tile) in self.iter():
+            if tile is None:
+                 self.reset_tile(x, y)
+        # === We need to create a new entry road too.
+        self[0, self.height//2].type = entry_road
 
     def iter(self) -> Generator[tuple[int, int, Tile], None, None]:
         for x in range(self.width):
             for y in range(self.height):
                 yield x, y, self[x, y]
+
+    def reset_map(self, window: pygame.surface.Surface) -> tuple[int, int, list["HighlightableRectangle"]]:
+        self.check_connected()
+        window.fill(BACKGROUND_COLOUR, rect=(0, 0, window.get_width()-ICON_SIZE, window.get_height()-ICON_SIZE))
+        x_offset = window.get_width() // 2 - (TILE_WIDTH * self.width // 2) - TILE_WIDTH  # Center the world
+        y_offset = window.get_height() // 2 - (TILE_WIDTH * self.height // 2) - TILE_WIDTH  # Center the world
+        self.redraw_entire_map()
+        expansion_rectangles = generate_expansion_rectangles(self)
+
+        for entity_name in self.entity_lists.keys():
+            self.entity_lists[entity_name] = []  # type: ignore[literal-required]
+
+        return x_offset, y_offset, expansion_rectangles
 
 
 def has_connected_road(map: Map, x: int, y: int) -> bool:

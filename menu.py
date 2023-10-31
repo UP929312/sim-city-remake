@@ -159,8 +159,8 @@ def save_world_window(window: pygame.surface.Surface, world: Map, *_: Any) -> st
                     text += event.unicode
 
             text_entry.text = text
-            text_entry.draw(window, 0)
-            Label("Save World", 0, 0, window.get_width(), window.get_height()//6).draw(window, 0)
+            text_entry.draw(window, 0, 0)
+            Label("Save World", 0, 0, window.get_width(), window.get_height()//6).draw(window, 0, 0)
             pygame.display.update()
 
 

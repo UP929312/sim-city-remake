@@ -165,7 +165,7 @@ class GenericTile:
             return f"Not enough money to remove {map[x, y].type.name}"
 
         map.cash -= self.cost_to_remove
-        map[x, y].type = generate_tile_type(map[x, y].height_map)
+        map.reset_tile(x, y)
         return None
 
     def on_matrix_destroy(self, map: Map) -> None:
@@ -490,7 +490,7 @@ class Unzone(GenericTile):
 
     def on_place(self, map: Map, x: int, y: int) -> None | str:
         if map[x, y].type.name in ZONES:
-            map[x, y].type = generate_tile_type(map[x, y].height_map)
+            map.reset_tile(x, y)
         return None
 
 
@@ -525,7 +525,7 @@ ALL_TILES = [
 ICON_LIST = [x.icon for x in ALL_TILES if x.cost is not None and x.name not in ("Road", "House", "Shop", "Office")]
 
 ZONED_BUILDINGS = ("House", "Shop", "Office")
-ZONES = ("House_Zoning", "Shop_Zoning", "Office_Zoning")
+ZONES = ("HouseZoning", "ShopZoning", "OfficeZoning")
 SERVICES = ("FireStation", "Hospital", "PoliceStation")
 ROADS = ["Road", "EntryRoad"]
 
@@ -595,7 +595,8 @@ class Tile:
         self.road = 0  # This is just to keep mypy happy
 
     def __repr__(self) -> str:
-        return f"Tile({self.type.name=}, {self.biome=}, {self.height_map=}, {self.quality=}, {self.water=}, {self.density=}, {self.level=}, {self.happiness=}, {self.people_inside=}, {self.fire_ticks=})"
+        return f"Tile({self.type.name=}, {self.biome=}, {self.height_map=}, {self.quality=}, {self.water=})"
+        # , {self.density=}, {self.level=}, {self.happiness=}, {self.people_inside=}, {self.fire_ticks=}
 
     def to_dict(self) -> dict[str, str | int | bool | list[Person] | None]:
         return {

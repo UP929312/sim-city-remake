@@ -6,7 +6,7 @@ import pygame
 
 from classes import ICON_LIST, get_type_by_name
 from menu import draw_policy_screen
-from menu_elements import IconButton, RowOfButtons
+from menu_elements import BottomRow, FadingTextBottomButton, IconButton
 from utils import ICON_SIZE, IMAGES
 
 if TYPE_CHECKING:
@@ -64,20 +64,24 @@ def generate_side_bar(tool: str, draw_style: str, icon_offset: int, window: pyga
         dynamic_buttons.append(button)
 
     for element in static_buttons + dynamic_buttons:
-        element.draw(window, 0)
+        element.draw(window, 0, 0)
 
     return static_buttons + dynamic_buttons
 
 
-def generate_bottom_bar(window: pygame.surface.Surface, map: Map, view: str, run_counter: int, clock: pygame.time.Clock, error_text: str) -> RowOfButtons:
-    row_of_buttons = RowOfButtons(0, window.get_height() - ICON_SIZE, window.get_width()-ICON_SIZE, ICON_SIZE,
-        [
-            f"Cash: {map.cash}  "
-            f"{view.removesuffix('_view').capitalize()}  "
-            f"FPS: {int(clock.get_fps())}  "
-            f"Vehicles: {len(map.entity_lists['Vehicle'])}  "
-            f"Run Counter: {run_counter}  "
-        ] + ([error_text] if error_text else [])
+def generate_bottom_bar(
+    window: pygame.surface.Surface, map: Map, view: str, run_counter: int, clock: pygame.time.Clock,
+    mouse_tile_x: int | None, mouse_tile_y: int | None, mouse_x: int | None, mouse_y: int | None,
+    fading_text_element: FadingTextBottomButton,
+) -> None:
+    bottom_row = BottomRow(0, window.get_height() - ICON_SIZE, window.get_width()-ICON_SIZE, ICON_SIZE,
+        f"Cash: {map.cash}  "
+        f"{view.removesuffix('_view').capitalize()}  "
+        f"FPS: {int(clock.get_fps())}  "
+        f"Vehicles: {len(map.entity_lists['Vehicle'])}  "
+        f"Run Counter: {run_counter}  "
+        f"Coords: {mouse_x}, {mouse_y}  "
+        f"Tile: {mouse_tile_x}, {mouse_tile_y}  ",
+        fading_text_element,
     )
-    row_of_buttons.draw(window, 0)
-    return row_of_buttons
+    bottom_row.draw(window, 0, 0)

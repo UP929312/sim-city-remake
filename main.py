@@ -8,14 +8,14 @@ from classes import get_type_by_name
 from entities import Pedestrian, Vehicle
 from file_manager import load_preferences
 from generate_world import generate_world
-# ============================
 from menu import draw_main_menu, draw_pause_menu
-from menu_elements import handle_collisions
+from menu_elements import FadingTextBottomButton, handle_collisions
 from overlays import generate_bottom_bar, generate_side_bar
+# ============================
 from utils import (BACKGROUND_COLOUR, DESIRED_FPS, ICON_SIZE, IMAGES,
                    TICK_RATE, TILE_WIDTH, VERSION, MapSettingsType,
                    convert_mouse_pos_to_coords, coords_to_screen_pos,
-                   get_all_grid_coords, get_class_properties, reset_map)
+                   get_all_grid_coords, get_class_properties)
 
 # https://www.freepik.com/search?format=search&query=fire%20station%20icon%20pixel%20art
 print("main: Starting")
@@ -44,7 +44,6 @@ pause = False
 
 tool = "select"
 draw_style = "single"
-extra_text = ""
 
 views = (
     "general_view",
@@ -65,9 +64,8 @@ view = views[0]
 # ============================
 map = draw_main_menu(window)
 preferences = load_preferences()
-x_offset, y_offset = reset_map(window, map)
-# DRAWING Right Bar
-side_bar_elements = generate_side_bar(tool, draw_style, icon_offset, window, map.settings)
+x_offset, y_offset, expansion_rectangles = map.reset_map(window)
+fading_text_element = FadingTextBottomButton(0, 0, 16, 16, [])
 # ============================
 clock = pygame.time.Clock()
 
@@ -118,9 +116,13 @@ while True:
         # ---------------------------------------------------------
         # DRAWING - Bottom bar
         if tool == "select" and len(map[mouse_motion_tile_x, mouse_motion_tile_y].error_list) > 0:
-            extra_text = map[mouse_motion_tile_x, mouse_motion_tile_y].error_list[0]
+            fading_text_element.add_to_queue(map[mouse_motion_tile_x, mouse_motion_tile_y].error_list[0])
 
-    # DRAWING - Side bar only happens on update
+    # DRAWING Right Bar
+    side_bar_elements = generate_side_bar(tool, draw_style, icon_offset, window, map.settings)
+    for rectangle in expansion_rectangles:
+        pygame.draw.rect(window, BACKGROUND_COLOUR, (rectangle.x1+x_offset, rectangle.y1+y_offset, rectangle.width, rectangle.height))
+        rectangle.draw(window, x_offset, y_offset)
     # =========================================================
     # CONTROLS
     for event in pygame.event.get():
@@ -130,14 +132,12 @@ while True:
         # ----------------------------------------------------------
         if event.type == pygame.VIDEORESIZE:
             window.fill(BACKGROUND_COLOUR, rect=(0, 0, window.get_width()-ICON_SIZE, window.get_height()-ICON_SIZE))
-            x_offset, y_offset = reset_map(window, map)
-            generate_side_bar(tool, draw_style, icon_offset, window, map.settings)
+            x_offset, y_offset, expansion_rectangles = map.reset_map(window)
         # ----------------------------------------------------------
         # KEY DOWN
         elif event.type == pygame.KEYDOWN:  # If they press a key
             if event.key == pygame.K_q:  # Re-center map
-                x_offset, y_offset = reset_map(window, map)
-                generate_side_bar(tool, draw_style, icon_offset, window, map.settings)
+                x_offset, y_offset, expansion_rectangles = map.reset_map(window)
 
             elif event.key in [pygame.K_COMMA, pygame.K_PERIOD]:
                 view_index += 1 if event.key == pygame.K_PERIOD else -1
@@ -161,8 +161,7 @@ while True:
 
             elif event.key == pygame.K_e:
                 map.expand()
-                x_offset, y_offset = reset_map(window, map)
-                generate_side_bar(tool, draw_style, icon_offset, window, map.settings)
+                x_offset, y_offset, expansion_rectangles = map.reset_map(window)
 
             elif event.key == pygame.K_r:
                 map = generate_world(map_settings=map.settings, seed=randint(1, 100))  # pyright: ignore
@@ -172,25 +171,39 @@ while True:
                 if result is not None:
                     map = result
                 preferences = load_preferences()
-                x_offset, y_offset = reset_map(window, map)
-                generate_side_bar(tool, draw_style, icon_offset, window, map.settings)
+                x_offset, y_offset, expansion_rectangles = map.reset_map(window)
+
+                mouse_down_x, mouse_down_y = None, None  # TODO: Change how this works I guess
+                mouse_down_tile_x, mouse_down_tile_y = None, None
+                mouse_motion_x, mouse_motion_y = None, None
+                mouse_motion_tile_x, mouse_motion_tile_y = None, None
         # ----------------------------------------------------------
         # MOUSE DOWN
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_LEFT:  # When they click the button
             mouse_down_x, mouse_down_y = pygame.mouse.get_pos()
             mouse_down_tile_x, mouse_down_tile_y = convert_mouse_pos_to_coords(mouse_down_x, mouse_down_y, x_offset, y_offset, map, window)
 
-            right_bar_result: None | tuple[str, str, int, MapSettingsType] = handle_collisions(window, mouse_down_x, mouse_down_y, side_bar_elements, 0)
+            right_bar_result: None | tuple[str, str, int, MapSettingsType] = handle_collisions(window, mouse_down_x, mouse_down_y, side_bar_elements, 0, 0)
             if right_bar_result is not None:
                 tool, draw_style, icon_offset, new_settings = right_bar_result
                 map.settings: MapSettingsType = map.settings | new_settings  # type: ignore[misc]
                 map.redraw_entire_map()
-                # DRAWING Right Bar, only if it updates
-                side_bar_elements = generate_side_bar(tool, draw_style, icon_offset, window, map.settings)
 
             vehicles = [x for x in map.entity_lists["Vehicle"] if x.current_loc == (mouse_down_tile_x, mouse_down_tile_y)]
             if vehicles:
                 print("main:", str(vehicles[0]))
+
+            for rectangle in expansion_rectangles:
+                if rectangle.intersected(mouse_down_x-x_offset, mouse_down_y-y_offset):                   
+                    if (rectangle.width*rectangle.height) // TILE_WIDTH > map.cash:
+                        print("main: Not enough cash")
+                        fading_text_element.add_to_queue("Not enough cash")
+                    else:
+                        print("Expanding in direction:", rectangle.text)
+                        map.expand(rectangle.text)  # type: ignore[arg-type]
+                        map.cash -= (rectangle.width*rectangle.height) // TILE_WIDTH
+                        _, _, expansion_rectangles = map.reset_map(window)
+
         # ----------------------------------------------------------
         # MOUSE UP
         elif event.type == pygame.MOUSEBUTTONUP and event.button == pygame.BUTTON_LEFT:  # When they release the mouse button
@@ -207,12 +220,12 @@ while True:
                     elif tool == "destroy":
                         message = map[x, y].type.on_destroy(map, x, y)
                         if message is not None:
-                            extra_text = message
+                            fading_text_element.add_to_queue(message)
                     else:
                         tile_class = get_type_by_name(tool)
                         message = tile_class.on_place(map, x, y)
                         if message is not None:
-                            extra_text = message
+                            fading_text_element.add_to_queue(message)
                     # -----------------------------------
                     map[x, y].error_list = []
 
@@ -226,6 +239,12 @@ while True:
         elif event.type == pygame.MOUSEMOTION:  # This is for writing the error (when the user moves the mouse over an error square)
             mouse_motion_x, mouse_motion_y = pygame.mouse.get_pos()
             mouse_motion_tile_x, mouse_motion_tile_y = convert_mouse_pos_to_coords(mouse_motion_x, mouse_motion_y, x_offset, y_offset, map, window)
+
+            for rectangle in expansion_rectangles:
+                if rectangle.intersected(mouse_motion_x-x_offset, mouse_motion_y-y_offset):
+                    rectangle.on_hover()
+                else:
+                    rectangle.off_hover()
 
     # =========================================================
     # ENTITY HANDLING HANDLING
@@ -255,8 +274,7 @@ while True:
                 route_type = choice(["residential", "commercial", "industrial"])
                 entity_type.try_create(entity_type, map, route_type, rainbow_entities_enabled=preferences["rainbow_entities"])  # type: ignore[attr-defined]
     # =========================================================
-    generate_bottom_bar(window, map, view, run_counter, clock, extra_text)
-    extra_text = ""
+    generate_bottom_bar(window, map, view, run_counter, clock, mouse_motion_tile_x, mouse_motion_tile_y, mouse_motion_x, mouse_motion_y, fading_text_element)
 
     if not pause:
         run_counter += 1

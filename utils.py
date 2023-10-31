@@ -42,8 +42,8 @@ DEFAULT_MAP_SETTINGS: MapSettingsType = {
     "generate_lakes": True,
     "generate_ruins": True,
     "generate_biomes": True,
-    "map_width": 64,  # TODO: Change back to 48
-    "map_height": 16,  # TODO: Change back to 48
+    "map_width": 4,  # Change back to 48
+    "map_height": 4,  # Change back to 48
     "starting_cash": STARTING_CASH,
     "residential_tax_rate": 10,
     "commercial_tax_rate": 10,
@@ -63,6 +63,12 @@ def rot_center(image: pygame.surface.Surface, angle: int) -> pygame.surface.Surf
     rot_sprite = pygame.transform.rotate(image, angle)
     rot_sprite.get_rect().center = loc
     return rot_sprite
+
+# def transparent_rectangle(window: pygame.surface.Surface, x: int, y: int, width: int, height: int, colour: tuple[int, int, int], alpha: int) -> None:
+#     surface = pygame.Surface((width, height))
+#     surface.set_alpha(alpha)
+#     surface.fill(colour)
+#     window.blit(surface, (x, y))
 
 
 IMAGES: dict[str, pygame.surface.Surface] = {}
@@ -129,19 +135,6 @@ def get_all_grid_coords(x1: int, y1: int, x2: int, y2: int, single_place: bool) 
 
 def get_class_properties(cls: object) -> list[str]:
     return [i for i in dir(cls) if not i.startswith("_") and i not in ["to_dict", "from_dict"]]
-
-
-def reset_map(window: pygame.surface.Surface, map: Map) -> tuple[int, int]:
-    map.check_connected()
-    window.fill(BACKGROUND_COLOUR, rect=(0, 0, window.get_width()-ICON_SIZE, window.get_height()-ICON_SIZE))
-    x_offset = window.get_width() // 2 - (TILE_WIDTH * map.width // 2) - TILE_WIDTH  # Center the world
-    y_offset = window.get_height() // 2 - (TILE_WIDTH * map.height // 2) - TILE_WIDTH  # Center the world
-    map.redraw_entire_map()
-
-    for entity_name in map.entity_lists.keys():
-        map.entity_lists[entity_name] = []  # type: ignore[literal-required]
-
-    return x_offset, y_offset
 
 
 def convert_mouse_pos_to_coords(x: int, y: int, x_offset: int, y_offset: int, map: Map, window: pygame.surface.Surface) -> tuple[int, int] | tuple[None, None]:

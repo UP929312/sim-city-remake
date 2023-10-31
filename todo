@@ -37,14 +37,17 @@ Make scrolling in the load game menu scroll the index?
 
 The route cache doesn't work, it just dies after a while, maybe I could even bake it into the level somehow, I guess expansion would break that.
 
-Change on place and destroy to return None of str of error, or success I guess. Done, but now it's not persistant, maybe a way to have a fading state?
-
-tile_is_in_world needs to take into account offsets and do something with them
-
 Change biome to be height map, and then use biome for snow, sand, that kind of thing
 For old maps, regenerate a new set of biome and height_map values
 
 God damnnit, menus un-scroll in the create world menu
 
-Expansion stuff, i.e. on one side, floating text, basically like prison architect, and hover colour
+Expansion stuff, i.e. on one side, floating text, basically like prison architect, and hover colour | WORK IN PROGRESS
 Instead of random key binds, a dev menu with more buttons and stuff
+
+A dev fire button, maybe even a dev toggle which enables the fire and stuff?
+The map width and height info, the money button, expansion button should also be in dev menu, as should the dev fire button, and the dev toggle button
+
+Tileable background of the out of bounds texture, maybe loop over the screen and only draw if the offset is between a and back
+
+What I should really have is the window, and also the display, where the tiles sit, and build the whole display and blit it that way, would be way better.
