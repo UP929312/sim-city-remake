@@ -103,14 +103,14 @@ class Entity:
         self.current_loc = new_pos
         return self.current_loc[0], self.current_loc[1]
 
-    def draw(self, window: pygame.surface.Surface, x_offset: int, y_offset: int) -> None:
+    def draw(self, display: pygame.surface.Surface, x_offset: int, y_offset: int) -> None:
         image = rotated_entities_cache[f"{self.__class__.__name__.lower()}_{self.entity_subtype}_rotation_{self.rotation}"]
 
         x_loc = (self.current_loc[0] * TILE_WIDTH) + self.x_offset + x_offset
         y_loc = (self.current_loc[1] * TILE_WIDTH) + self.y_offset + y_offset
-        if x_loc < 0 or y_loc < 0 or x_loc > window.get_width()-ICON_SIZE or y_loc > window.get_height()-ICON_SIZE:
+        if x_loc < 0 or y_loc < 0 or x_loc > display.get_width() or y_loc > display.get_height():
             return  # Don't draw anything off screen
-        window.blit(image, (x_loc, y_loc))
+        display.blit(image, (x_loc, y_loc))
 
     def make_move(self) -> None | tuple[int, int]:  # If they're at the end, it'll be None
         if not self.path:  # If they've reached the end

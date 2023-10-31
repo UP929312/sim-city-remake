@@ -203,11 +203,11 @@ class Map:
             for y in range(self.height):
                 yield x, y, self[x, y]
 
-    def reset_map(self, window: pygame.surface.Surface) -> tuple[int, int, list["HighlightableRectangle"]]:
+    def reset_map(self, display: pygame.surface.Surface) -> tuple[int, int, list["HighlightableRectangle"]]:
         self.check_connected()
-        window.fill(BACKGROUND_COLOUR, rect=(0, 0, window.get_width()-ICON_SIZE, window.get_height()-ICON_SIZE))
-        x_offset = window.get_width() // 2 - (TILE_WIDTH * self.width // 2) - TILE_WIDTH  # Center the world
-        y_offset = window.get_height() // 2 - (TILE_WIDTH * self.height // 2) - TILE_WIDTH  # Center the world
+        display.fill(BACKGROUND_COLOUR)
+        x_offset = display.get_width() // 2 - (TILE_WIDTH * self.width // 2) - TILE_WIDTH  # Center the world
+        y_offset = display.get_height() // 2 - (TILE_WIDTH * self.height // 2) - TILE_WIDTH  # Center the world
         self.redraw_entire_map()
         expansion_rectangles = generate_expansion_rectangles(self)
 

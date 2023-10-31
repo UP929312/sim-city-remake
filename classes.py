@@ -56,26 +56,26 @@ class GenericTile:
 
     # =============================================================================
     # DRAWING
-    def draw(self, window: pygame.surface.Surface, map: Map, x: int, y: int, view: str, old_roads: bool, x_offset: int, y_offset: int) -> None:
+    def draw(self, display: pygame.surface.Surface, map: Map, x: int, y: int, view: str, old_roads: bool, x_offset: int, y_offset: int) -> None:
         x_pos, y_pos = pos = coords_to_screen_pos(x, y, x_offset, y_offset)
-        if not (0 <= x_pos < window.get_width()-ICON_SIZE-TILE_WIDTH and 0 <= y_pos < window.get_height()-ICON_SIZE):
+        if not (0 <= x_pos < display.get_width()-TILE_WIDTH and 0 <= y_pos < display.get_height()):
             return
         map[x, y].redraw = False
 
         if view == "general_view":
             general_image = self.get_general_view_texture(map, x, y, old_roads)
-            window.blit(general_image, pos)
+            display.blit(general_image, pos)
             if map[x, y].fire_ticks is not None:
-                window.blit(IMAGES["fire"].convert_alpha(), pos)
+                display.blit(IMAGES["fire"].convert_alpha(), pos)
             if len(map[x, y].error_list) > 0:
-                window.blit(IMAGES["errorsquare"].convert_alpha(), pos)
+                display.blit(IMAGES["errorsquare"].convert_alpha(), pos)
             return
         if view == "crazy_view":
             return  # Crazy works by just letting things draw over each other.
 
         func = getattr(self, "draw_" + view)
         tile_colour = func(map[x, y])
-        pygame.draw.rect(window, tile_colour, (*pos, TILE_WIDTH, TILE_WIDTH))
+        pygame.draw.rect(display, tile_colour, (*pos, TILE_WIDTH, TILE_WIDTH))
 
     def get_general_view_texture(self, map: Map, x: int, y: int, old_roads: bool) -> pygame.Surface:  # Leave types for typing.
         return IMAGES[self.general_view_image].convert()

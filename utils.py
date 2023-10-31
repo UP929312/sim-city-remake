@@ -64,12 +64,6 @@ def rot_center(image: pygame.surface.Surface, angle: int) -> pygame.surface.Surf
     rot_sprite.get_rect().center = loc
     return rot_sprite
 
-# def transparent_rectangle(window: pygame.surface.Surface, x: int, y: int, width: int, height: int, colour: tuple[int, int, int], alpha: int) -> None:
-#     surface = pygame.Surface((width, height))
-#     surface.set_alpha(alpha)
-#     surface.fill(colour)
-#     window.blit(surface, (x, y))
-
 
 IMAGES: dict[str, pygame.surface.Surface] = {}
 for images, subdirectory in [(listdir("images/icons"), "icons"), (listdir("images/tiles"), "tiles"), ([x for x in listdir("images/") if x.endswith(".png")], "")]:

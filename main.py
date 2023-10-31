@@ -27,6 +27,7 @@ window.set_alpha(None)  # This is for performance
 pygame.display.set_caption(f"Sim City {'.'.join([str(x) for x in VERSION])}")
 pygame.event.set_allowed([pygame.QUIT, pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN,
                           pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION, pygame.VIDEORESIZE])
+display = pygame.surface.Surface((window.get_width()-ICON_SIZE, window.get_height()-ICON_SIZE))  # This is for performance
 # ============================
 # Vars init
 run_counter = 0
@@ -64,7 +65,7 @@ view = views[0]
 # ============================
 map = draw_main_menu(window)
 preferences = load_preferences()
-x_offset, y_offset, expansion_rectangles = map.reset_map(window)
+x_offset, y_offset, expansion_rectangles = map.reset_map(display)
 fading_text_element = FadingTextBottomButton(0, 0, 16, 16, [])
 # ============================
 clock = pygame.time.Clock()
@@ -82,7 +83,7 @@ while True:
         x_offset += offsets[pygame.key.name(held_key)][0]
         y_offset += offsets[pygame.key.name(held_key)][1]
 
-        window.fill(BACKGROUND_COLOUR, rect=(0, 0, window.get_width()-ICON_SIZE, window.get_height()-ICON_SIZE))
+        display.fill(BACKGROUND_COLOUR)
         map.redraw_entire_map()
 
         mouse_down_x, mouse_down_y = None, None
@@ -93,7 +94,7 @@ while True:
     # DRAWING - MAP
     for (x, y, tile) in map.iter():
         if tile.redraw:
-            tile.type.draw(window, map, x, y, view, old_roads=preferences["old_roads"], x_offset=x_offset, y_offset=y_offset)
+            tile.type.draw(display, map, x, y, view, old_roads=preferences["old_roads"], x_offset=x_offset, y_offset=y_offset)
 
         if run_counter % 4 and tile.vehicle_heatmap > 0:  # Only update the heatmap every 4 ticks so it doesn't decrease too quickly.
             tile.vehicle_heatmap -= 1
@@ -103,15 +104,16 @@ while True:
         if tile.fire_ticks is not None:
             tile.redraw = True
             tile.fire_ticks += 1
+    
     # ---------------------------------------------------------
     if mouse_motion_tile_x is not None and mouse_motion_tile_y is not None:
         # GENERATE DRAG GRID
         if pygame.mouse.get_pressed()[0] and mouse_down_tile_x is not None and mouse_down_tile_y is not None:
             for x, y in get_all_grid_coords(mouse_down_tile_x, mouse_down_tile_y, mouse_motion_tile_x, mouse_motion_tile_y, single_place=draw_style == "single"):
-                window.blit(IMAGES["dragged_square"].convert_alpha(), coords_to_screen_pos(x, y, x_offset, y_offset))
+                display.blit(IMAGES["dragged_square"].convert_alpha(), coords_to_screen_pos(x, y, x_offset, y_offset))
                 map[x, y].redraw = True
 
-        window.blit(IMAGES["dragged_square"], coords_to_screen_pos(mouse_motion_tile_x, mouse_motion_tile_y, x_offset, y_offset))
+        display.blit(IMAGES["dragged_square"], coords_to_screen_pos(mouse_motion_tile_x, mouse_motion_tile_y, x_offset, y_offset))
         map[mouse_motion_tile_x, mouse_motion_tile_y].redraw = True
         # ---------------------------------------------------------
         # DRAWING - Bottom bar
@@ -121,8 +123,9 @@ while True:
     # DRAWING Right Bar
     side_bar_elements = generate_side_bar(tool, draw_style, icon_offset, window, map.settings)
     for rectangle in expansion_rectangles:
-        pygame.draw.rect(window, BACKGROUND_COLOUR, (rectangle.x1+x_offset, rectangle.y1+y_offset, rectangle.width, rectangle.height))
-        rectangle.draw(window, x_offset, y_offset)
+        pygame.draw.rect(display, BACKGROUND_COLOUR, (rectangle.x1+x_offset, rectangle.y1+y_offset, rectangle.width, rectangle.height))
+        rectangle.draw(display, x_offset, y_offset)
+
     # =========================================================
     # CONTROLS
     for event in pygame.event.get():
@@ -131,13 +134,13 @@ while True:
             sys.exit()
         # ----------------------------------------------------------
         if event.type == pygame.VIDEORESIZE:
-            window.fill(BACKGROUND_COLOUR, rect=(0, 0, window.get_width()-ICON_SIZE, window.get_height()-ICON_SIZE))
-            x_offset, y_offset, expansion_rectangles = map.reset_map(window)
+            display.fill(BACKGROUND_COLOUR)
+            x_offset, y_offset, expansion_rectangles = map.reset_map(display)
         # ----------------------------------------------------------
         # KEY DOWN
         elif event.type == pygame.KEYDOWN:  # If they press a key
             if event.key == pygame.K_q:  # Re-center map
-                x_offset, y_offset, expansion_rectangles = map.reset_map(window)
+                x_offset, y_offset, expansion_rectangles = map.reset_map(display)
 
             elif event.key in [pygame.K_COMMA, pygame.K_PERIOD]:
                 view_index += 1 if event.key == pygame.K_PERIOD else -1
@@ -158,7 +161,7 @@ while True:
 
             elif event.key == pygame.K_e:
                 map.expand()
-                x_offset, y_offset, expansion_rectangles = map.reset_map(window)
+                x_offset, y_offset, expansion_rectangles = map.reset_map(display)
 
             elif event.key == pygame.K_r:
                 map = generate_world(map_settings=map.settings, seed=randint(1, 100))  # pyright: ignore
@@ -168,7 +171,7 @@ while True:
                 if result is not None:
                     map = result
                 preferences = load_preferences()
-                x_offset, y_offset, expansion_rectangles = map.reset_map(window)
+                x_offset, y_offset, expansion_rectangles = map.reset_map(display)
 
                 mouse_down_x, mouse_down_y = None, None  # TODO: Change how this works I guess
                 mouse_down_tile_x, mouse_down_tile_y = None, None
@@ -198,7 +201,7 @@ while True:
                         fading_text_element.add_to_queue(f"Expanding in direction: {rectangle.text}")
                         map.expand(rectangle.text)  # type: ignore[arg-type]
                         map.cash -= (rectangle.width*rectangle.height) // TILE_WIDTH
-                        _, _, expansion_rectangles = map.reset_map(window)
+                        _, _, expansion_rectangles = map.reset_map(display)
 
         # ----------------------------------------------------------
         # MOUSE UP
@@ -248,7 +251,7 @@ while True:
         # DRAW
         if view in ("general_view", "crazy_view", "colour_view"):
             for entity in entity_list:
-                entity.draw(window, x_offset, y_offset)
+                entity.draw(display, x_offset, y_offset)
 
         if pause:  # If the game is paused, don't move or create entities
             continue
@@ -269,6 +272,8 @@ while True:
                 entity_type.try_create(entity_type, map, route_type, rainbow_entities_enabled=preferences["rainbow_entities"])  # type: ignore[attr-defined]
     # =========================================================
     generate_bottom_bar(window, map, view, run_counter, clock, mouse_motion_tile_x, mouse_motion_tile_y, mouse_motion_x, mouse_motion_y, fading_text_element)
+
+    window.blit(display, (0, 0))
 
     if not pause:
         run_counter += 1
