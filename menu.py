@@ -14,11 +14,11 @@ from menu_elements import (BACK_BUTTON, Button, GoBack, IntegerSelector, Label,
 from utils import DEFAULT_MAP_SETTINGS, MapSettingsType
 
 
-def margins(window: pygame.Surface) -> tuple[int, int, int, int]:
+def margins(window: pygame.surface.Surface) -> tuple[int, int, int, int]:
     LEFT_MARGIN = int(window.get_width() * 0.15)
-    RIGHT_MARGIN = int(window.get_width() - LEFT_MARGIN)
-    ELEMENT_WIDTH = int(window.get_width() - (LEFT_MARGIN * 2))
-    TOP_MARGIN = int(window.get_height() // 6)
+    RIGHT_MARGIN = window.get_width() - LEFT_MARGIN
+    ELEMENT_WIDTH = window.get_width() - (LEFT_MARGIN * 2)
+    TOP_MARGIN = window.get_height() // 6
     return ELEMENT_WIDTH, TOP_MARGIN, LEFT_MARGIN, RIGHT_MARGIN
 
 # ================================================================================================================================
@@ -60,7 +60,7 @@ def world_settings_menu(window: pygame.surface.Surface, *_: Any) -> MapSettingsT
     Returns a list of world settings to create a new world with
     """
 
-    element_width, top_margin, left_margin, _ = margins(window)  # type: ignore[assignment]
+    element_width, top_margin, left_margin, _1 = margins(window)
     map_settings = DEFAULT_MAP_SETTINGS
     elements: list[ToggleRow | IntegerSelector | Button] = [
         BACK_BUTTON,
@@ -84,7 +84,7 @@ def world_settings_menu(window: pygame.surface.Surface, *_: Any) -> MapSettingsT
 
 
 def settings_menu(window: pygame.surface.Surface, *_: Any) -> NoReturn:
-    element_width, top_margin, left_margin, _ = margins(window)  # type: ignore[assignment]
+    element_width, top_margin, left_margin, _1 = margins(window)
     prefs = load_preferences()
 
     elements: list[Button | ToggleRow | IntegerSelector] = [
@@ -106,7 +106,7 @@ def settings_menu(window: pygame.surface.Surface, *_: Any) -> NoReturn:
 
 
 def draw_main_menu(window: pygame.surface.Surface, *_: Any) -> Map:
-    element_width, top_margin, left_margin, _ = margins(window)  # type: ignore[assignment]
+    element_width, top_margin, left_margin, _1 = margins(window)
     elements = [
         Button(left_margin, top_margin + 30 + i * 128, element_width, 64, button_text, function)  # type: ignore[arg-type]
         for i, (button_text, function) in enumerate(
@@ -132,7 +132,7 @@ def save_world_window(window: pygame.surface.Surface, world: Map, *_: Any) -> st
     """
     Returns None for nothing, or a string for the world name
     """
-    element_width, _, left_margin, _ = margins(window)  # type: ignore[assignment]
+    element_width, _1, left_margin, _2 = margins(window)
     text = ""
     text_entry = TextEntry(left_margin, 320, element_width, 64)
     window.fill((0, 0, 0))

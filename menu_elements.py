@@ -74,7 +74,7 @@ class Label(Element):
 
 
 class Button(Element):
-    def __init__(self, x1: int, y1: int, width: int | float, height: int | float, text: str | None, on_click: Callable) -> None:  # type: ignore[type-arg]
+    def __init__(self, x1: int, y1: int, width: int | float, height: int | float, text: str | None, on_click: Callable[..., Any]) -> None:
         super().__init__(x1, y1, width, height, str(text))
         if text is not None:
             self.label = Label(text, x1, y1, int(width), int(height))
@@ -94,12 +94,12 @@ class IconButton(Element):
 
     def __init__(
         self, x1: int, y1: int, width: int, height: int, text: str, icon_image: pygame.surface.Surface,
-        is_selected: bool, on_click: Callable[[pygame.surface.Surface, Button, int, int], None]
+        is_selected: bool, on_click: Callable[[pygame.surface.Surface, "IconButton", int, int], tuple[Any, ...]]
     ) -> None:
         super().__init__(x1, y1, width, height, text)
         self.icon_image = icon_image
         self.on_click = on_click
-        self.text = text  # This is used to detect which button was pressed.
+        self.text: str = text  # This is used to detect which button was pressed.
         self.is_selected = is_selected
 
         self.size = 32
@@ -181,7 +181,7 @@ class ToggleRow(Element):
         self.toggled_label = Label("(Yes)" if self.value else "(No)", int(section1 + (0.1 * width)), y1, section2 - section1, height)
         self.toggle_button = Button(int(section2 + (0.2 * width)), y1, width - section2, height * 0.75, "Toggle", self.on_click)
 
-        self.children: tuple[Label, Label, Button] = (self.name_label, self.toggled_label, self.toggle_button)  # type: ignore[assignment]
+        self.children = [self.name_label, self.toggled_label, self.toggle_button]
 
     def on_click(self, *_: Any) -> None:
         self.value = not self.value
@@ -220,7 +220,7 @@ class IntegerSelector(Element):
 
         self.name_label = Label(text, x1, y1-4, width * 0.25, middle_height)
         self.value_label = Label(self.value, int(x1 + width * 0.75), y1-4, width * 0.25, middle_height)
-        self.children: list[Label | Button] = [self.name_label, self.value_label]  # type: ignore[assignment]
+        self.children = [self.name_label, self.value_label]
         slot_size = width // 9
         for i, icon in enumerate(["<<", "<", "0", ">", ">>"]):
             button = Button(x1 + (slot_size * i * 2), y1 + middle_height, slot_size, middle_height, icon, self.on_click)
@@ -244,7 +244,8 @@ class IntegerSelector(Element):
     def intersected(self, x: int, y: int) -> Button | None:
         for button in self.children[2:]:
             if button.intersected(x, y):
-                return button  # type: ignore[return-value]
+                assert isinstance(button, Button)
+                return button
         return None
 
     def __str__(self) -> str:
@@ -292,9 +293,9 @@ class SliderRow(Element):
         self.slider_element = SliderElement(x1 + width // 2, y1 + height // 4, width // 2, height // 4, starting_value, minimum, maximum)
         self.value_label = Label(self.slider_element.value, int(x1 + (width * 0.25)), y1, width * 0.25, height // 2)
 
-        self.children = (self.name_label, self.slider_element, self.value_label)  # type: ignore[assignment]
+        self.children = [self.name_label, self.slider_element, self.value_label]
 
-    def on_click(self, *_) -> None:  # type: ignore[no-untyped-def]
+    def on_click(self, *_: Any) -> None:
         pass  # Sigh, I never thought I'd get to this, but without this function/pass, it doesn't work
 
     def intersected(self, x: int, y: int) -> Button | None:
@@ -325,10 +326,7 @@ class HighlightableRectangle(Element):
         self.is_hovered = False
 
     def draw(self, window: pygame.surface.Surface, horizontal_scroll_offset: int, vertical_scroll_offset: int) -> None:
-        surface = pygame.Surface(size=(self.width, self.height))
-        surface.set_alpha(128)
-        surface.fill(self.hovered_colour if self.is_hovered else self.unhovered_colour)
-        window.blit(surface, (self.x1+horizontal_scroll_offset, self.y1+vertical_scroll_offset))
+        pygame.draw.rect(window, self.hovered_colour if self.is_hovered else self.unhovered_colour, (self.x1+horizontal_scroll_offset, self.y1+vertical_scroll_offset, self.width, self.height))
 
     def on_hover(self) -> None:
         self.is_hovered = True

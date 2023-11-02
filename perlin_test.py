@@ -3,7 +3,7 @@ from utils import DEFAULT_MAP_SETTINGS
 
 # rint()
 # for value in [6, 8]:
-#     map = generate_world(map_settings=DEFAULT_MAP_SETTINGS | {"map_height": value, "map_width": value, "generate_ruins": False, "generate_lakes": False, "tree_density": 0, "seed": 12})  # type: ignore
+#     map = generate_world(map_settings=DEFAULT_MAP_SETTINGS | {"map_height": value, "map_width": value, "generate_ruins": False, "generate_lakes": False, "tree_density": 0, "seed": 12})
 #     map.rint()
 #     rint()
 

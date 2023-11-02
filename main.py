@@ -12,10 +12,11 @@ from menu import draw_main_menu, draw_pause_menu
 from menu_elements import FadingTextBottomButton, handle_collisions
 from overlays import generate_bottom_bar, generate_side_bar
 # ============================
-from utils import (BACKGROUND_COLOUR, DESIRED_FPS, ICON_SIZE, IMAGES,
-                   TICK_RATE, TILE_WIDTH, VERSION, MapSettingsType,
+from utils import (DESIRED_FPS, IMAGES, TICK_RATE, TILE_EXPANSION_COST,
+                   TILE_WIDTH, VERSION, MapSettingsType,
                    convert_mouse_pos_to_coords, coords_to_screen_pos,
-                   get_all_grid_coords, get_class_properties)
+                   generate_background_image, get_all_grid_coords,
+                   get_class_properties)
 
 # https://www.freepik.com/search?format=search&query=fire%20station%20icon%20pixel%20art
 print("main: Starting")
@@ -66,6 +67,7 @@ map = draw_main_menu(window)
 preferences = load_preferences()
 x_offset, y_offset, expansion_rectangles = map.reset_map(window)
 fading_text_element = FadingTextBottomButton(0, 0, 16, 16, [])
+side_bar_elements = []  # type: ignore[var-annotated]
 # ============================
 clock = pygame.time.Clock()
 
@@ -82,47 +84,13 @@ while True:
         x_offset += offsets[pygame.key.name(held_key)][0]
         y_offset += offsets[pygame.key.name(held_key)][1]
 
-        window.fill(BACKGROUND_COLOUR, rect=(0, 0, window.get_width()-ICON_SIZE, window.get_height()-ICON_SIZE))
+        window.blit(map.background_image, (0, 0))
         map.redraw_entire_map()
 
         mouse_down_x, mouse_down_y = None, None
         mouse_down_tile_x, mouse_down_tile_y = None, None
         mouse_motion_x, mouse_motion_y = None, None
         mouse_motion_tile_x, mouse_motion_tile_y = None, None
-    # =========================================================
-    # DRAWING - MAP
-    for (x, y, tile) in map.iter():
-        if tile.redraw:
-            tile.type.draw(window, map, x, y, view, old_roads=preferences["old_roads"], x_offset=x_offset, y_offset=y_offset)
-
-        if run_counter % 4 and tile.vehicle_heatmap > 0:  # Only update the heatmap every 4 ticks so it doesn't decrease too quickly.
-            tile.vehicle_heatmap -= 1
-            if view == "heatmap_view":
-                tile.redraw = True
-
-        if tile.fire_ticks is not None:
-            tile.redraw = True
-            tile.fire_ticks += 1
-    # ---------------------------------------------------------
-    if mouse_motion_tile_x is not None and mouse_motion_tile_y is not None:
-        # GENERATE DRAG GRID
-        if pygame.mouse.get_pressed()[0] and mouse_down_tile_x is not None and mouse_down_tile_y is not None:
-            for x, y in get_all_grid_coords(mouse_down_tile_x, mouse_down_tile_y, mouse_motion_tile_x, mouse_motion_tile_y, single_place=draw_style == "single"):
-                window.blit(IMAGES["dragged_square"].convert_alpha(), coords_to_screen_pos(x, y, x_offset, y_offset))
-                map[x, y].redraw = True
-
-        window.blit(IMAGES["dragged_square"], coords_to_screen_pos(mouse_motion_tile_x, mouse_motion_tile_y, x_offset, y_offset))
-        map[mouse_motion_tile_x, mouse_motion_tile_y].redraw = True
-        # ---------------------------------------------------------
-        # DRAWING - Bottom bar
-        if tool == "select" and len(map[mouse_motion_tile_x, mouse_motion_tile_y].error_list) > 0:
-            fading_text_element.add_to_queue(map[mouse_motion_tile_x, mouse_motion_tile_y].error_list[0])
-
-    # DRAWING Right Bar
-    side_bar_elements = generate_side_bar(tool, draw_style, icon_offset, window, map.settings)
-    for rectangle in expansion_rectangles:
-        pygame.draw.rect(window, BACKGROUND_COLOUR, (rectangle.x1+x_offset, rectangle.y1+y_offset, rectangle.width, rectangle.height))
-        rectangle.draw(window, x_offset, y_offset)
     # =========================================================
     # CONTROLS
     for event in pygame.event.get():
@@ -131,7 +99,8 @@ while True:
             sys.exit()
         # ----------------------------------------------------------
         if event.type == pygame.VIDEORESIZE:
-            window.fill(BACKGROUND_COLOUR, rect=(0, 0, window.get_width()-ICON_SIZE, window.get_height()-ICON_SIZE))
+            map.background_image = generate_background_image(window)
+            window.blit(map.background_image, (0, 0))
             x_offset, y_offset, expansion_rectangles = map.reset_map(window)
         # ----------------------------------------------------------
         # KEY DOWN
@@ -151,7 +120,8 @@ while True:
                 pause = not pause
 
             elif event.key == pygame.K_f:
-                map[mouse_motion_tile_x, mouse_motion_tile_y].fire_ticks = 1  # type: ignore[index]
+                assert mouse_motion_tile_x is not None and mouse_motion_tile_y is not None
+                map[mouse_motion_tile_x, mouse_motion_tile_y].fire_ticks = 1
 
             # elif event.key == pygame.K_i:
             #     rint(f"{map.emergency_vehicles_on_route=}")  # {map.services=},
@@ -196,9 +166,11 @@ while True:
                         fading_text_element.add_to_queue("Not enough cash")
                     else:
                         fading_text_element.add_to_queue(f"Expanding in direction: {rectangle.text}")
-                        map.expand(rectangle.text)  # type: ignore[arg-type]
-                        map.cash -= (rectangle.width*rectangle.height) // TILE_WIDTH
-                        _, _, expansion_rectangles = map.reset_map(window)
+                        map.expand(direction=str(rectangle.text))
+                        x_offset -= TILE_WIDTH if rectangle.text == "left" else 0
+                        y_offset -= TILE_WIDTH if rectangle.text == "top" else 0
+                        map.cash -= (rectangle.width // TILE_WIDTH) * (rectangle.height // TILE_WIDTH) * TILE_EXPANSION_COST
+                        _, _, expansion_rectangles = map.reset_map(window)  # Generate new rectangles
 
         # ----------------------------------------------------------
         # MOUSE UP
@@ -224,7 +196,7 @@ while True:
                     map[x, y].error_list = []
 
                 map.check_connected()
-                map.redraw_entire_map()
+                map.redraw_entire_map()  # Mainly for roads
 
         elif event.type == pygame.MOUSEBUTTONUP:  # Cancel dragging
             mouse_up_x, mouse_up_y, mouse_down_x, mouse_down_y = None, None, None, None  # type: ignore[assignment]
@@ -268,6 +240,40 @@ while True:
                 route_type = choice(["residential", "commercial", "industrial"])
                 entity_type.try_create(entity_type, map, route_type, rainbow_entities_enabled=preferences["rainbow_entities"])  # type: ignore[attr-defined]
     # =========================================================
+    # DRAWING - MAP
+    for (x, y, tile) in map.iter():
+        if tile.redraw:
+            tile.type.draw(window, map, x, y, view, old_roads=preferences["old_roads"], x_offset=x_offset, y_offset=y_offset)
+
+        if run_counter % 4 and tile.vehicle_heatmap > 0:  # Only update the heatmap every 4 ticks so it doesn't decrease too quickly.
+            tile.vehicle_heatmap -= 1
+            if view == "heatmap_view":
+                tile.redraw = True
+
+        if tile.fire_ticks is not None:
+            tile.redraw = True  # TODO: Remove this
+            tile.fire_ticks += 1
+    # ---------------------------------------------------------
+    # DRAWING - Drag Grid
+    if mouse_motion_tile_x is not None and mouse_motion_tile_y is not None:
+        # GENERATE DRAG GRID
+        if pygame.mouse.get_pressed()[0] and mouse_down_tile_x is not None and mouse_down_tile_y is not None:
+            for x, y in get_all_grid_coords(mouse_down_tile_x, mouse_down_tile_y, mouse_motion_tile_x, mouse_motion_tile_y, single_place=draw_style == "single"):
+                window.blit(IMAGES["dragged_square"], coords_to_screen_pos(x, y, x_offset, y_offset))
+                map[x, y].redraw = True
+
+        window.blit(IMAGES["dragged_square"], coords_to_screen_pos(mouse_motion_tile_x, mouse_motion_tile_y, x_offset, y_offset))
+        map[mouse_motion_tile_x, mouse_motion_tile_y].redraw = True
+        # ---------------------------------------------------------
+        # DRAWING - Bottom bar
+        if tool == "select" and len(map[mouse_motion_tile_x, mouse_motion_tile_y].error_list) > 0:
+            fading_text_element.add_to_queue(map[mouse_motion_tile_x, mouse_motion_tile_y].error_list[0])
+
+    # DRAWING Right Bar
+    side_bar_elements = generate_side_bar(tool, draw_style, icon_offset, window, map.settings)
+    for rectangle in expansion_rectangles:
+        rectangle.draw(window, x_offset, y_offset)
+
     generate_bottom_bar(window, map, view, run_counter, clock, mouse_motion_tile_x, mouse_motion_tile_y, mouse_motion_x, mouse_motion_y, fading_text_element)
 
     if not pause:

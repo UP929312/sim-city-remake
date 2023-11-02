@@ -44,23 +44,23 @@ def generate_side_bar(tool: str, draw_style: str, icon_offset: int, window: pyga
     pygame.draw.rect(window, (0, 0, 0), (window.get_width()-ICON_SIZE, 0, ICON_SIZE, window.get_height()))
     verticle_tiles = window.get_height() // (ICON_SIZE*2+1) - 2*3
 
-    def button_press(_1: Any, button: IconButton, *_: Any) -> tuple[str, str, int, MapSettingsType]:
-        return icon_name_to_function(button.text, tool, draw_style, icon_offset, settings)  # type: ignore[arg-type]
+    def button_press(_: pygame.surface.Surface, button: IconButton, _1: int, _2: int) -> tuple[str, str, int, MapSettingsType]:
+        return icon_name_to_function(button.text, tool, draw_style, icon_offset, settings)
 
     x = window.get_width() - ICON_SIZE
     static_buttons = [
-        IconButton(x, 0, ICON_SIZE, ICON_SIZE, "change_draw_style", IMAGES[f"{draw_style}_draw_icon"], is_selected=True, on_click=button_press),  # type: ignore[arg-type]
-        IconButton(x, 64, ICON_SIZE, ICON_SIZE, "change_tool_select", IMAGES["select_icon"], is_selected=(tool == "select"), on_click=button_press),  # type: ignore[arg-type]
-        IconButton(x, 128, ICON_SIZE, ICON_SIZE, "change_tool_destroy", IMAGES["destroy_icon"], is_selected=(tool == "destroy"), on_click=button_press),  # type: ignore[arg-type]
-        IconButton(x, 192, ICON_SIZE, ICON_SIZE, "click_icon_road", IMAGES["road_icon"], is_selected=(tool == "road"), on_click=button_press),  # type: ignore[arg-type]
-        IconButton(x, 256, ICON_SIZE, ICON_SIZE, "scroll_up", IMAGES["up_arrow"], is_selected=True, on_click=button_press),  # type: ignore[arg-type]
-        IconButton(x, window.get_height()-ICON_SIZE*3, ICON_SIZE, ICON_SIZE, "scroll_down",   IMAGES["down_arrow"], is_selected=True, on_click=button_press),  # type: ignore[arg-type]
+        IconButton(x, 0, ICON_SIZE, ICON_SIZE, "change_draw_style", IMAGES[f"{draw_style}_draw_icon"], is_selected=True, on_click=button_press),
+        IconButton(x, 64, ICON_SIZE, ICON_SIZE, "change_tool_select", IMAGES["select_icon"], is_selected=(tool == "select"), on_click=button_press),
+        IconButton(x, 128, ICON_SIZE, ICON_SIZE, "change_tool_destroy", IMAGES["destroy_icon"], is_selected=(tool == "destroy"), on_click=button_press),
+        IconButton(x, 192, ICON_SIZE, ICON_SIZE, "click_icon_road", IMAGES["road_icon"], is_selected=(tool == "road"), on_click=button_press),
+        IconButton(x, 256, ICON_SIZE, ICON_SIZE, "scroll_up", IMAGES["up_arrow"], is_selected=True, on_click=button_press),
+        IconButton(x, window.get_height()-ICON_SIZE*3, ICON_SIZE, ICON_SIZE, "scroll_down",   IMAGES["down_arrow"], is_selected=True, on_click=button_press),
         IconButton(x, window.get_height()-ICON_SIZE,   ICON_SIZE, ICON_SIZE, "policy_screen", IMAGES["policy_menu"], is_selected=True,
-                   on_click=lambda *_: handle_policy_change(window, tool, draw_style, icon_offset, settings)),  # type: ignore[arg-type]
+                   on_click=lambda *_: handle_policy_change(window, tool, draw_style, icon_offset, settings)),
     ]
     dynamic_buttons = []
     for i, icon in enumerate([ICON_LIST[(i + icon_offset) % len(ICON_LIST)] for i in range(verticle_tiles)]):
-        button = IconButton(x, 320 + i * 64, ICON_SIZE, ICON_SIZE, f"click_icon_{icon}", IMAGES[icon], is_selected=(tool == icon.removesuffix("_icon")), on_click=button_press)  # type: ignore[arg-type]
+        button = IconButton(x, 320 + i * 64, ICON_SIZE, ICON_SIZE, f"click_icon_{icon}", IMAGES[icon], is_selected=(tool == icon.removesuffix("_icon")), on_click=button_press)
         dynamic_buttons.append(button)
 
     for element in static_buttons + dynamic_buttons:

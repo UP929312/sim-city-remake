@@ -1,35 +1,11 @@
 # Make the camera movable
 
-- Tiles move properly
-- Entities move properly
-- Dragging grid works great
-- Building now works
-- Entities and tiles aren't draw if off the screen.
-- Other views are working great too now
-- The bottom and right bar now properly scale nicely, and are more OOP, only thing missing is click detection.
-- The right bar now also doesn't redraw every tick.
-- The save world screen is 90% done, the title doesn't dynamically change, and we probably need a back button.
-- Trees now work on a density system, so small worlds aren't filled with trees
-- Scrolling in menus now works too, allowing the addition of map width and height selectors
-- After a lot of work, non-square worlds now work (rectangle worlds), which is great.
-
-- The overlays work great now, and the menus scale 90%,
-- Need to make the main menus scale nicer (everything works actually, apart from main menu, potentially because it never gets the new values?)
-
-- Currently, expansion works great, but doesn't include the perlin noise, maybe make it all dirt or something? Also need to make the regen world not do it if it's a bad number
-- For the expansion, obviously we need to loop until we don't get a bad number from the perlin noise, but also, we can generate an entire bigger perlin noise grid (slow, I know), and then cut out the edge
-- Generating a huuuuge perlin noise function is essentially instant, so maybe change the perlin noise width and height to instead take a subsection of a bigger slice, that way when we're expanding, we just take a bigger slice? I guess it's just generating the biome right, so we can re-generate the base material using biome_to_tile.
-- Maybe we can make a 3x3 grid of worlds, just in case I ever want to add multiple worlds or something, I don't think lag will work with bigger than 96 worlds?
-- The perlin function seems to take width and height into account for more than just size of array, like bigger maps have less detail.
-- I should swap out the perlin noise function for one that takes coords...
-- The perlin noise function now takes coords, after I've ported to the new system, but still scales weirdly?
-- Hmmm the perlin function seems to act more differently if the original set is different? Perhaps?
-
 - The recursion limit needs to be changed depending on world size, and I guess pathfinding is going to struggle way more on bigger worlds.
 
 - flake8 . --ignore=E501,E226,W503,E203,E241,PBP113,E301,PBP115,E123,E128,W504
 - pylint *.py --disable=invalid-name,missing-function-docstring,fixme,line-too-long,redefined-builtin,missing-module-docstring,pointless-string-statement,missing-class-docstring,c-extension-no-member,no-member,too-many-arguments,too-many-instance-attributes,unused-argument,too-few-public-methods,too-many-locals
 - mypy . --strict
+- pygount --format=summary --folders-to-skip=[*__pycache__,.vscode,.mypy_cache,.git,__pycache__] .
 
 Somehow make menus update in real time to changes in size of window?
 
@@ -44,7 +20,3 @@ Instead of random key binds, a dev menu with more buttons and stuff
 
 A dev fire button, maybe even a dev toggle which enables the fire and stuff?
 The map width and height info, the money button, expansion button should also be in dev menu, as should the dev fire button, and the dev toggle button
-
-Tileable background of the out of bounds texture, maybe loop over the screen and only draw if the offset is between a and back
-
-What I should really have is the window, and also the display, where the tiles sit, and build the whole display and blit it that way, would be way better.

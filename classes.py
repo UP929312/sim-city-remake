@@ -6,8 +6,7 @@ from typing import TYPE_CHECKING, Any
 import pygame
 
 # from need_calculator import calculate_happiness
-# from utils import rot_center)
-from utils import (DESIRED_FPS, ICON_SIZE, IMAGES, TILE_WIDTH,
+from utils import (DESIRED_FPS, ICON_SIZE, IMAGES, TILE_WIDTH,  # rot_center
                    coords_to_screen_pos, get_neighbouring_road_string)
 
 COLOUR_TYPE = tuple[int, int, int]
@@ -19,7 +18,7 @@ if TYPE_CHECKING:
 
 class GenericTile:
 
-    __slots__ = ("name", "cost", "cost_to_remove", "can_place_on", "need_road", "single_place", "icon",
+    __slots__ = ("name", "display_name", "cost", "cost_to_remove", "can_place_on", "need_road", "single_place", "icon",
                  "general_view_image", "quality_view", "density_view", "base_colour", "random_rotation")
 
     def __init__(
@@ -33,6 +32,7 @@ class GenericTile:
         random_rotation: bool = False,
     ) -> None:
         self.name = self.__class__.__name__
+        self.display_name = self.name.replace("A", " A").replace("B", " B").replace("C", " C").replace("D", " D").replace("E", " E").replace("F", " F").replace("G", " G").replace("H", " H").replace("I", " I").replace("J", " J").replace("K", " K").replace("L", " L").replace("M", " M").replace("N", " N").replace("O", " O").replace("P", " P").replace("Q", " Q").replace("R", " R").replace("S", " S").replace("T", " T").replace("U", " U").replace("V", " V").replace("W", " W").replace("X", " X").replace("Y", " Y").replace("Z", " Z").strip()
         self.cost = cost
         self.cost_to_remove = cost_to_remove
         self.can_place_on = can_place_on
@@ -66,9 +66,9 @@ class GenericTile:
             general_image = self.get_general_view_texture(map, x, y, old_roads)
             window.blit(general_image, pos)
             if map[x, y].fire_ticks is not None:
-                window.blit(IMAGES["fire"].convert_alpha(), pos)
+                window.blit(IMAGES["fire"], pos)
             if len(map[x, y].error_list) > 0:
-                window.blit(IMAGES["errorsquare"].convert_alpha(), pos)
+                window.blit(IMAGES["errorsquare"], pos)
             return
         if view == "crazy_view":
             return  # Crazy works by just letting things draw over each other.
@@ -78,7 +78,7 @@ class GenericTile:
         pygame.draw.rect(window, tile_colour, (*pos, TILE_WIDTH, TILE_WIDTH))
 
     def get_general_view_texture(self, map: Map, x: int, y: int, old_roads: bool) -> pygame.Surface:  # Leave types for typing.
-        return IMAGES[self.general_view_image].convert()
+        return IMAGES[self.general_view_image]  # .convert()
         # return rot_center(IMAGES[self.general_view_image].convert(), 0 if not self.random_rotation else 90*((x*1111 + y*3)%4))
 
     def draw_nearest_services(self, _: Tile) -> COLOUR_TYPE:
@@ -139,13 +139,13 @@ class GenericTile:
     def on_place(self, map: Map, x: int, y: int) -> None | str:
         place_on_type = map[x, y].type
         if self.cost is not None and map.cash < self.cost:
-            return f"Cannot afford a {self.name}, it costs {self.cost}"
+            return f"Cannot afford a {self.display_name}, it costs {self.cost}"
 
         if not place_on_type.can_place_on:
-            return f"Cannot place {self.name} on {place_on_type.name}"
+            return f"Cannot place {self.display_name} on {place_on_type.display_name}"
 
         if place_on_type.name == self.name:
-            return f"The tile there is already a {self.name}"
+            return f"The tile there is already a {self.display_name}"
 
         assert self.cost is not None
         map.cash -= self.cost
@@ -159,10 +159,10 @@ class GenericTile:
     # DESTROYING
     def on_destroy(self, map: Map, x: int, y: int) -> None | str:
         if self.cost_to_remove is None:
-            return f"{map[x, y].type.name} can't be removed"
+            return f"{map[x, y].type.display_name} can't be removed"
 
         if map.cash < self.cost_to_remove:
-            return f"Not enough money to remove {map[x, y].type.name}"
+            return f"Not enough money to remove {map[x, y].type.display_name}"
 
         map.cash -= self.cost_to_remove
         map.reset_tile(x, y)
@@ -202,23 +202,23 @@ class Road(GenericRoad):
     def __init__(self) -> None:
         super().__init__(cost=50, cost_to_remove=25, base_colour=(50, 50, 50))
 
-    def on_destroy(self, map: Map, x: int, y: int) -> None | str:
-        # Delete all the cached routes that pass through this tile
-        for key, route_list in dict(map.route_cache.items()):  # Copy dictionary
-            if (x, y) in route_list:  # type: ignore[comparison-overlap]
-                del map.route_cache[key]  # type: ignore[arg-type]
-        return super().on_destroy(map, x, y)
+    # def on_destroy(self, map: Map, x: int, y: int) -> None | str:
+    #     # Delete all the cached routes that pass through this tile
+    #     for key, route_list in dict(map.route_cache.items()):  # Copy dictionary
+    #         if (x, y) in route_list:  # type: ignore[comparison-overlap]
+    #             del map.route_cache[key]  # type: ignore[arg-type]
+    #     return super().on_destroy(map, x, y)
 
     def on_matrix_destroy(self, map: Map) -> None:
         pass
         # map.regenerate_pathfinding_matrix_cache()
 
-    def on_place(self, map: Map, x: int, y: int) -> None | str:
-        # Delete all the cached routes that pass through this tile
-        for key, route_list in dict(map.route_cache.items()):  # Copy dictionary
-            if (x, y) in route_list:  # type: ignore[comparison-overlap]
-                del map.route_cache[key]  # type: ignore[arg-type]
-        return super().on_place(map, x, y)
+    # def on_place(self, map: Map, x: int, y: int) -> None | str:
+    #     # Delete all the cached routes that pass through this tile
+    #     for key, route_list in dict(map.route_cache.items()):  # Copy dictionary
+    #         if (x, y) in route_list:  # type: ignore[comparison-overlap]
+    #             del map.route_cache[key]  # type: ignore[arg-type]
+    #     return super().on_place(map, x, y)
 
     def on_matrix_place(self, map: Map) -> None:
         pass
@@ -348,7 +348,7 @@ class FireStation(ServiceTile):
     def __init__(self) -> None:
         super().__init__(cost=500, cost_to_remove=100, single_place=True, need_road=True, base_colour=(100, 0, 0))
 
-    def draw_fire_view(self, *_) -> COLOUR_TYPE:  # type: ignore[no-untyped-def]
+    def draw_fire_view(self, _: Tile) -> COLOUR_TYPE:
         colour = (255, 0, 0)
         return colour
 
@@ -358,7 +358,7 @@ class Hospital(ServiceTile):
     def __init__(self) -> None:
         super().__init__(cost=500, cost_to_remove=100, single_place=True, need_road=True, base_colour=(150, 150, 150))
 
-    def draw_hospital_view(self, *_) -> COLOUR_TYPE:  # type: ignore[no-untyped-def]
+    def draw_hospital_view(self, _: Tile) -> COLOUR_TYPE:
         colour = (255, 255, 255)
         return colour
 
@@ -368,7 +368,7 @@ class PoliceStation(ServiceTile):
     def __init__(self) -> None:
         super().__init__(cost=500, cost_to_remove=100, single_place=True, need_road=True, base_colour=(0, 0, 150))
 
-    def draw_police_view(self, *_) -> COLOUR_TYPE:  # type: ignore[no-untyped-def]
+    def draw_police_view(self, _: Tile) -> COLOUR_TYPE:
         colour = (0, 0, 255)
         return colour
 
@@ -394,16 +394,17 @@ class Dirt(GenericTile):
         super().__init__(cost=500, cost_to_remove=None, can_place_on=True, base_colour=(50, 50, 0), random_rotation=True)
 
     def on_place(self, map: Map, x: int, y: int) -> None | str:
+        assert self.cost is not None
         place_on_type: GenericTile = map[x, y].type
         if place_on_type.name not in ["Water", "LilyPad"]:
             return "Can only place dirt on water or lily pads!"
 
         # The cost will always be an int here
-        if map.cash < self.cost:  # type: ignore[operator]
+        if map.cash < self.cost:
             return f"Not enough money to fill in water, it costs {water.cost}"
 
         # The cost will always be an int here
-        map.cash -= self.cost  # type: ignore[operator]
+        map.cash -= self.cost
         map[x, y].type = self
         return None
 
@@ -467,13 +468,13 @@ class WaterTower(GenericTile):
     def __init__(self) -> None:
         super().__init__(cost=100, single_place=True, need_road=True, base_colour=(0, 0, 100))
 
-    def draw_water_view(self, _) -> COLOUR_TYPE:  # type: ignore[no-untyped-def]
+    def draw_water_view(self, _: Tile) -> COLOUR_TYPE:
         colour = (255, 255, 255)
         return colour
 
     def on_place(self, map: Map, x: int, y: int) -> None | str:
         if map[x, y].water < 1:  # If there's no water
-            return f"{self.name} can only be placed where there is water!"
+            return f"{self.display_name} can only be placed where there is water!"
         return super().on_place(map, x, y)
 
 

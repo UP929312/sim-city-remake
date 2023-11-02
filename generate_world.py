@@ -48,7 +48,7 @@ def generate_world(map_settings: MapSettingsType, seed: int | None = None) -> Ma
         for x in range(map_width):
             for y in range(map_height):
                 neighbours = get_neighbour_coords(map_width, map_height, x, y)
-                total = sum(world[_x, _y].water for (_x, _y) in neighbours)  # Won't always have 4 neighbours
+                total = sum(world[_x, _y].water for (_x, _y) in neighbours)  # type: ignore[attr-defined] # Won't always have 4 neighbours  
                 world[x, y].water = int(clip(num=total / len(neighbours), minimum=0, maximum=255))
     # ==================================================================
     if map_settings["generate_ruins"]:

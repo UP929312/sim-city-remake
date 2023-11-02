@@ -17,8 +17,8 @@ TICK_RATE = 5
 DESIRED_FPS = 30
 
 ICON_SIZE = 32
-BACKGROUND_COLOUR = (40, 40, 40)
 NEIGHBOURS = [(0, -1), (1, 0), (0, 1), (-1, 0)]
+TILE_EXPANSION_COST = 100
 
 
 class MapSettingsType(TypedDict):
@@ -35,7 +35,6 @@ class MapSettingsType(TypedDict):
     industrial_tax_rate: int
 
 
-STARTING_CASH = 50000
 DEFAULT_MAP_SETTINGS: MapSettingsType = {
     "seed": random.randint(1, 100),
     "tree_density": 25,
@@ -44,7 +43,7 @@ DEFAULT_MAP_SETTINGS: MapSettingsType = {
     "generate_biomes": True,
     "map_width": 4,  # Change back to 48
     "map_height": 4,  # Change back to 48
-    "starting_cash": STARTING_CASH,
+    "starting_cash": 50000,
     "residential_tax_rate": 10,
     "commercial_tax_rate": 10,
     "industrial_tax_rate": 10,
@@ -64,11 +63,13 @@ def rot_center(image: pygame.surface.Surface, angle: int) -> pygame.surface.Surf
     rot_sprite.get_rect().center = loc
     return rot_sprite
 
-# def transparent_rectangle(window: pygame.surface.Surface, x: int, y: int, width: int, height: int, colour: tuple[int, int, int], alpha: int) -> None:
-#     surface = pygame.Surface((width, height))
-#     surface.set_alpha(alpha)
-#     surface.fill(colour)
-#     window.blit(surface, (x, y))
+
+def generate_background_image(window: pygame.surface.Surface) -> pygame.surface.Surface:
+    background_image = pygame.Surface((window.get_width()-ICON_SIZE, window.get_height()-ICON_SIZE))
+    for x in range(0, background_image.get_width(), TILE_WIDTH):
+        for y in range(0, background_image.get_height(), TILE_WIDTH):
+            background_image.blit(IMAGES["out_of_bounds"], (x, y))
+    return background_image
 
 
 IMAGES: dict[str, pygame.surface.Surface] = {}
@@ -94,19 +95,19 @@ def clip(num: int | float, minimum: int, maximum: int) -> int:
     return min(max(num, minimum), maximum)  # type: ignore[return-value]
 
 
-def get_neighbour_coords(map_width: int, map_height: int, x: int, y: int, include_void_tiles: bool = False) -> list[tuple[int, int] | tuple[int, int]]:
-    neighbours: list[tuple[int, int] | tuple[int, int]] = []
+def get_neighbour_coords(map_width: int, map_height: int, x: int, y: int, include_void_tiles: bool = False) -> list[tuple[int, int] | tuple[None, None]]:
+    neighbours: list[tuple[int, int] | tuple[None, None]] = []
     for x_neigh, y_neigh in NEIGHBOURS:
         if 0 <= x + x_neigh < map_width and 0 <= y + y_neigh < map_height:
             neighbours.append((x + x_neigh, y + y_neigh))
         elif include_void_tiles:
-            neighbours.append((None, None))  # type: ignore[arg-type]
+            neighbours.append((None, None))
     return neighbours
 
 
 def get_neighbouring_road_string(map: Map, x: int, y: int) -> str:
     neighbours = get_neighbour_coords(map.width, map.height, x, y, include_void_tiles=True)
-    neighbouring_roads = "".join(["0" if (_x is None or not map[_x, _y].road) else "1" for (_x, _y) in neighbours])
+    neighbouring_roads = "".join(["0" if (_x is None or not map[_x, _y].road) else "1" for (_x, _y) in neighbours])  # type: ignore[index]
     return neighbouring_roads
 
 
@@ -147,6 +148,6 @@ def convert_mouse_pos_to_coords(x: int, y: int, x_offset: int, y_offset: int, ma
 
 
 def coords_to_screen_pos(x: int, y: int, x_offset: int, y_offset: int) -> tuple[int, int]:
-    return ((x * TILE_WIDTH)+x_offset, (y * TILE_WIDTH)+y_offset)  # [::-1]  # type: ignore[abc]
+    return ((x * TILE_WIDTH)+x_offset, (y * TILE_WIDTH)+y_offset)
 
 # ================================================================================================

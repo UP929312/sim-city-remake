@@ -58,7 +58,10 @@ rotated_entities_cache = {
 
 
 class Entity:
-    __slots__ = ("max_path_length", "speed", "direction_offsets", "entity_subtype", "start", "end", "rotation", "current_loc", "x_offset", "y_offset", "path")
+    __slots__ = ("entity_subtype", "start", "end", "rotation", "current_loc", "x_offset", "y_offset", "path")
+    max_path_length = 1500
+    speed = 2
+    direction_offsets = {"LEFT": (0, 0, 0)}
 
     def __init__(self, entity_subtype: str, map: Map, start: tuple[int, int], end: tuple[int, int], rainbow: bool = False, enforce_minimum_distance: bool = False, route: list[LOCATION_TYPE] | None = None) -> None:
         self.entity_subtype = randint(1, num_of_entity_sprites[self.__class__.__name__]) if rainbow else entity_subtype
@@ -69,10 +72,9 @@ class Entity:
         self.current_loc = start
         self.x_offset, self.y_offset = 5, 1  # We start the entities in the middle of the tile
         self.path = map.generate_route(start, end) if route is None else route
-        # rint("#"*10, "path_length", len(self.path))
-        if not (5 <= len(self.path) < self.max_path_length) and enforce_minimum_distance:  # type: ignore[attr-defined]
+        
+        if not (5 <= len(self.path) < self.__class__.max_path_length) and enforce_minimum_distance:
             # If the path is too short, or too long, delete the entity
-            # rint("Deleting because of minimum or maximum distance")
             raise DeleteEntity
 
     def __str__(self) -> str:
@@ -122,13 +124,13 @@ class Entity:
 
         new_position = self.path.pop(0)  # Used to give the inherited objects the next loc
         if new_position[0] < self.current_loc[0]:
-            self.x_offset, self.y_offset, self.rotation = self.direction_offsets["LEFT"]  # type: ignore[attr-defined]
+            self.x_offset, self.y_offset, self.rotation = self.direction_offsets["LEFT"]
         elif new_position[0] > self.current_loc[0]:
-            self.x_offset, self.y_offset, self.rotation = self.direction_offsets["RIGHT"]  # type: ignore[attr-defined]
+            self.x_offset, self.y_offset, self.rotation = self.direction_offsets["RIGHT"]
         elif new_position[1] < self.current_loc[1]:
-            self.x_offset, self.y_offset, self.rotation = self.direction_offsets["UP"]  # type: ignore[attr-defined]
+            self.x_offset, self.y_offset, self.rotation = self.direction_offsets["UP"]
         elif new_position[1] > self.current_loc[1]:
-            self.x_offset, self.y_offset, self.rotation = self.direction_offsets["DOWN"]  # type: ignore[attr-defined]
+            self.x_offset, self.y_offset, self.rotation = self.direction_offsets["DOWN"]
 
         return new_position
 

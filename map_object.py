@@ -11,7 +11,7 @@ from classes import ROADS, Tile, entry_road, generate_tile_type
 from entities import EntityList
 from expansion import (DIRECTION_TO_COORDS, DIRECTION_TO_SHIFT,
                        generate_expansion_rectangles)
-from utils import (BACKGROUND_COLOUR, ICON_SIZE, TILE_WIDTH, MapSettingsType,
+from utils import (TILE_WIDTH, MapSettingsType, generate_background_image,
                    get_neighbour_coords)
 
 sys.setrecursionlimit(1500)  # 1200 used to be the limit, now it's not
@@ -52,7 +52,7 @@ class Map:
             "PoliceStation": [],
             "Hospital": [],
         }
-        self.route_cache: dict[tuple[COORD_TYPE, COORD_TYPE], list[COORD_TYPE]] = {}
+        # self.route_cache: dict[tuple[COORD_TYPE, COORD_TYPE], list[COORD_TYPE]] = {}
         # The route cache maps start and end coords to their routes
 
     @property
@@ -118,8 +118,9 @@ class Map:
         grid = Grid(matrix=matrix)
         start_node, end_node = grid.node(*start), grid.node(*end)
         path, _ = finder.find_path(start_node, end_node, grid)
-        self.route_cache[(start, end)] = [(node.x, node.y) for node in path]
-        return self.route_cache[(start, end)]
+        # self.route_cache[(start, end)] = [(node.x, node.y) for node in path]
+        # return self.route_cache[(start, end)]
+        return [(node.x, node.y) for node in path]
 
     def get_all_tiles_by_type(self, tile_type: str) -> list[COORD_TYPE] | None:
         return [(x, y) for (x, y, _) in self.iter() if self[x, y].type.name == tile_type and self[x, y].fire_ticks is None] or None
@@ -143,6 +144,7 @@ class Map:
         # This on very rare occasions can cause a maximum recursion depth error
         self[x, y].road = 2
         for _x, _y in get_neighbour_coords(self.width, self.height, x, y):
+            assert _x is not None and _y is not None
             if self[_x, _y].road == 1:
                 self.update_neighbours(_x, _y)
 
@@ -205,7 +207,13 @@ class Map:
 
     def reset_map(self, window: pygame.surface.Surface) -> tuple[int, int, list["HighlightableRectangle"]]:
         self.check_connected()
-        window.fill(BACKGROUND_COLOUR, rect=(0, 0, window.get_width()-ICON_SIZE, window.get_height()-ICON_SIZE))
+        # ====
+        # Fill background in black
+        # pygame.draw.rect(window, (50, 50, 50), (0, 0, window.get_width()-ICON_SIZE, window.get_height()-ICON_SIZE))
+        if not hasattr(self, "background_image"):
+            self.background_image = generate_background_image(window)
+        window.blit(self.background_image, (0, 0))
+        # ====
         x_offset = window.get_width() // 2 - (TILE_WIDTH * self.width // 2) - TILE_WIDTH  # Center the world
         y_offset = window.get_height() // 2 - (TILE_WIDTH * self.height // 2) - TILE_WIDTH  # Center the world
         self.redraw_entire_map()
