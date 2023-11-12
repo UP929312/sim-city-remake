@@ -8,7 +8,6 @@ from pathfinding.core.grid import Grid  # type: ignore[import]
 from pathfinding.finder.best_first import BestFirst  # type: ignore[import]
 
 from classes import ROADS, Tile, entry_road, generate_tile_type
-from entities import EntityList
 from expansion import (DIRECTION_TO_COORDS, DIRECTION_TO_SHIFT,
                        generate_expansion_rectangles)
 from utils import (TILE_WIDTH, MapSettingsType, generate_background_image,
@@ -18,7 +17,7 @@ sys.setrecursionlimit(1500)  # 1200 used to be the limit, now it's not
 
 
 if TYPE_CHECKING:
-    from entities import Vehicle
+    from entities import EntityList, Vehicle
     from menu_elements import HighlightableRectangle
 
 # map.road:
@@ -206,6 +205,9 @@ class Map:
                 yield x, y, self[x, y]
 
     def reset_map(self, window: pygame.surface.Surface) -> tuple[int, int, list["HighlightableRectangle"]]:
+        """
+        Re-checks road connections, redraw's backgrounds, regenerates expansion rectangles, clears entities and centers the map
+        """
         self.check_connected()
         # ====
         # Fill background in black

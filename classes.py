@@ -263,19 +263,19 @@ class Zoning(GenericTile):
 class HouseZoning(Zoning):
     __slots__ = ()
     def __init__(self) -> None:
-        super().__init__(base_colour=(0, 100, 0), turns_to=House())
+        super().__init__(base_colour=(0, 100, 0), turns_to=house)
 
 
 class ShopZoning(Zoning):
     __slots__ = ()
     def __init__(self) -> None:
-        super().__init__(base_colour=(0, 100, 0), turns_to=Shop())
+        super().__init__(base_colour=(0, 100, 0), turns_to=shop)
 
 
 class OfficeZoning(Zoning):
     __slots__ = ()
     def __init__(self) -> None:
-        super().__init__(base_colour=(0, 100, 0), turns_to=Office())
+        super().__init__(base_colour=(0, 100, 0), turns_to=office)
 
 
 # -----------------------------------------------------------------------------
@@ -291,21 +291,21 @@ class GenericZonedBuilding(GenericTile):  # ################################
         happiness = tile.happiness or 0
         return (10, 25 * happiness, 10)
 
-    def on_random_tick(self, map: Map, x: int, y: int) -> None:
-        # rint(f"Random tick for {self.__class__.__name__}")
-        """
-        for service_type in ["FireStation", ]:
-            all_tiles = map.get_all_tiles_by_type(service_type)
-            #rint(all_tiles)
-            if all_tiles:
-                rint("Found all the tiles")
-                shortest_route = min([map.generate_route((x, y), tile) for tile in all_tiles], key=lambda x: len(x))
-                if shortest_route:
-                    rint("New shortest route)")
-                    map[x, y].service_routes[service_type] = shortest_route
-        #"""
-        # map[x, y].happiness = calculate_happiness(map, x, y)
-        # map[x, y].density += 1
+    # def on_random_tick(self, map: Map, x: int, y: int) -> None:
+    #     # rint(f"Random tick for {self.__class__.__name__}")
+    #     """
+    #     for service_type in ["FireStation", ]:
+    #         all_tiles = map.get_all_tiles_by_type(service_type)
+    #         #rint(all_tiles)
+    #         if all_tiles:
+    #             rint("Found all the tiles")
+    #             shortest_route = min([map.generate_route((x, y), tile) for tile in all_tiles], key=lambda x: len(x))
+    #             if shortest_route:
+    #                 rint("New shortest route)")
+    #                 map[x, y].service_routes[service_type] = shortest_route
+    #     #"""
+    #     # map[x, y].happiness = calculate_happiness(map, x, y)
+    #     # map[x, y].density += 1
 
 
 class House(GenericZonedBuilding):

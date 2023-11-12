@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+import numpy as np
 import pygame
 
 from classes import ICON_LIST, get_type_by_name
@@ -86,3 +87,24 @@ def generate_bottom_bar(
         fading_text_element,
     )
     bottom_row.draw(window, 0, 0)
+
+# def generate_vignette_overlay(window: pygame.surface.Surface) -> np.ndarray[Any, Any]:
+#     from pygame.math import Vector2
+#     corners = [
+#         Vector2(0, 0), Vector2(window.get_width(), 0),
+#         Vector2(0, window.get_height()), Vector2(window.get_width(), window.get_height()),
+#     ]
+#     """
+#     This should go through every pixel in the window and give a darkness vignette based on the distance to the corners.
+#     """
+#     vignette_values = np.zeros((window.get_width(), window.get_height(), 1), dtype=np.uint8)
+#     for x in range(window.get_width()-ICON_SIZE):
+#         for y in range(window.get_height()-ICON_SIZE):
+#             darkness = 0
+#             for corner in corners:
+#                 distance = Vector2(x, y).distance_to(corner)
+#                 darkness += distance
+#             #darkness = int(min(darkness // 100, 255))
+#             # And add them to a list:
+#             vignette_values[x, y] = 1 if darkness < 25 else 0  # (darkness, darkness, darkness)
+#     return vignette_values

@@ -17,6 +17,12 @@ Change biome to be height map, and then use biome for snow, sand, that kind of t
 For old maps, regenerate a new set of biome and height_map values
 
 Instead of random key binds, a dev menu with more buttons and stuff
-
 A dev fire button, maybe even a dev toggle which enables the fire and stuff?
 The map width and height info, the money button, expansion button should also be in dev menu, as should the dev fire button, and the dev toggle button
+
+Place to put in a seed?
+Expansion confirmation?
+Lighting
+Convert everything to 2d vectors
+Maybe a system which has a custom camera class, which maybe holds all the mouse and key data?
+The overlay system is just bad, we need to do it before the overalys Did I mean the expansion system?

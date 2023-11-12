@@ -186,7 +186,6 @@ class ToggleRow(Element):
     def on_click(self, *_: Any) -> None:
         self.value = not self.value
         self.toggled_label.text = "(Yes)" if self.value else "(No)"
-        # return {self.key: self.value}
 
     def __str__(self) -> str:
         return (

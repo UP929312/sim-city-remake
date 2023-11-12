@@ -41,8 +41,8 @@ DEFAULT_MAP_SETTINGS: MapSettingsType = {
     "generate_lakes": True,
     "generate_ruins": True,
     "generate_biomes": True,
-    "map_width": 4,  # Change back to 48
-    "map_height": 4,  # Change back to 48
+    "map_width": 64,  # Change back to 48
+    "map_height": 64,  # Change back to 48
     "starting_cash": 50000,
     "residential_tax_rate": 10,
     "commercial_tax_rate": 10,

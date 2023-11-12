@@ -8,7 +8,7 @@ from classes import get_type_by_name
 from entities import Pedestrian, Vehicle
 from file_manager import load_preferences
 from generate_world import generate_world
-from menu import draw_main_menu, draw_pause_menu
+from menu import dev_screen, draw_main_menu, draw_pause_menu
 from menu_elements import FadingTextBottomButton, handle_collisions
 from overlays import generate_bottom_bar, generate_side_bar
 # ============================
@@ -42,6 +42,7 @@ mouse_motion_x, mouse_motion_y = None, None
 mouse_motion_tile_x, mouse_motion_tile_y = None, None
 
 pause = False
+dev_mode = False
 
 tool = "select"
 draw_style = "single"
@@ -68,6 +69,7 @@ preferences = load_preferences()
 x_offset, y_offset, expansion_rectangles = map.reset_map(window)
 fading_text_element = FadingTextBottomButton(0, 0, 16, 16, [])
 side_bar_elements = []  # type: ignore[var-annotated]
+# vignette_values = generate_vignette_overlay(window)
 # ============================
 clock = pygame.time.Clock()
 
@@ -76,14 +78,16 @@ while True:
         map.check_connected()  # Update any roads that are not connected to the main road network, and also check any buildings not on roads
 
     held_keys = pygame.key.get_pressed()
-    pressing_movement_key = [held_keys[x] for x in movement_keys if held_keys[x]]
-
-    if pressing_movement_key:
+    if any(held_keys[x] for x in movement_keys):
         held_key = movement_keys[[held_keys[x] for x in movement_keys].index(True)]
         offsets = {"w": (0, TILE_WIDTH), "s": (0, -TILE_WIDTH), "a": (TILE_WIDTH, 0), "d": (-TILE_WIDTH, 0)}
-        x_offset += offsets[pygame.key.name(held_key)][0]
-        y_offset += offsets[pygame.key.name(held_key)][1]
-
+        new_x_offset, new_y_offset = offsets[pygame.key.name(held_key)][0], offsets[pygame.key.name(held_key)][1]
+        # Only move the offset if the new position is within the map
+        if -map.width  * TILE_WIDTH <= x_offset + new_x_offset <= window.get_width():
+            x_offset += new_x_offset
+        if -map.height * TILE_WIDTH <= y_offset + new_y_offset <= window.get_height():
+            y_offset += new_y_offset
+        
         window.blit(map.background_image, (0, 0))
         map.redraw_entire_map()
 
@@ -113,18 +117,17 @@ while True:
                 view = views[view_index % len(views)]
                 map.redraw_entire_map()
 
-            elif event.key == pygame.K_m:  # Dev tool for testing
-                map.cash = 999999
-
             elif event.key == pygame.K_p:
                 pause = not pause
 
             elif event.key == pygame.K_f:
-                assert mouse_motion_tile_x is not None and mouse_motion_tile_y is not None
-                map[mouse_motion_tile_x, mouse_motion_tile_y].fire_ticks = 1
+                if dev_mode:
+                    assert mouse_motion_tile_x is not None and mouse_motion_tile_y is not None
+                    map[mouse_motion_tile_x, mouse_motion_tile_y].fire_ticks = 1
 
-            # elif event.key == pygame.K_i:
-            #     rint(f"{map.emergency_vehicles_on_route=}")  # {map.services=},
+            elif event.key == pygame.K_v:
+                dev_mode = dev_screen(window, map, dev_mode)
+                _, _, expansion_rectangles = map.reset_map(window)
 
             elif event.key == pygame.K_e:
                 map.expand()
@@ -162,14 +165,15 @@ while True:
 
             for rectangle in expansion_rectangles:
                 if rectangle.intersected(mouse_down_x-x_offset, mouse_down_y-y_offset):
-                    if (rectangle.width*rectangle.height) // TILE_WIDTH > map.cash:
+                    expansion_cost = (rectangle.width // TILE_WIDTH) * (rectangle.height // TILE_WIDTH) * TILE_EXPANSION_COST
+                    if expansion_cost > map.cash:
                         fading_text_element.add_to_queue("Not enough cash")
                     else:
                         fading_text_element.add_to_queue(f"Expanding in direction: {rectangle.text}")
                         map.expand(direction=str(rectangle.text))
                         x_offset -= TILE_WIDTH if rectangle.text == "left" else 0
                         y_offset -= TILE_WIDTH if rectangle.text == "top" else 0
-                        map.cash -= (rectangle.width // TILE_WIDTH) * (rectangle.height // TILE_WIDTH) * TILE_EXPANSION_COST
+                        map.cash -= expansion_cost
                         _, _, expansion_rectangles = map.reset_map(window)  # Generate new rectangles
 
         # ----------------------------------------------------------
@@ -218,9 +222,8 @@ while True:
         entity_name: Literal["Vehicle", "Pedestrian"] = entity_type.__name__  # type: ignore[assignment]
         entity_list: list[Vehicle] | list[Pedestrian] = map.entity_lists[entity_name]
         # DRAW
-        if view in ("general_view", "crazy_view", "colour_view"):
-            for entity in entity_list:
-                entity.draw(window, x_offset, y_offset)
+        for entity in entity_list:
+            entity.draw(window, x_offset, y_offset, view)
 
         if pause:  # If the game is paused, don't move or create entities
             continue
@@ -251,7 +254,7 @@ while True:
                 tile.redraw = True
 
         if tile.fire_ticks is not None:
-            tile.redraw = True  # TODO: Remove this
+            # tile.redraw = True  # TODO: Remove this
             tile.fire_ticks += 1
     # ---------------------------------------------------------
     # DRAWING - Drag Grid
@@ -260,20 +263,21 @@ while True:
         if pygame.mouse.get_pressed()[0] and mouse_down_tile_x is not None and mouse_down_tile_y is not None:
             for x, y in get_all_grid_coords(mouse_down_tile_x, mouse_down_tile_y, mouse_motion_tile_x, mouse_motion_tile_y, single_place=draw_style == "single"):
                 window.blit(IMAGES["dragged_square"], coords_to_screen_pos(x, y, x_offset, y_offset))
-                map[x, y].redraw = True
+                map[x, y].redraw = True  # So when we stop dragging or move the drag it will redraw the tile
 
         window.blit(IMAGES["dragged_square"], coords_to_screen_pos(mouse_motion_tile_x, mouse_motion_tile_y, x_offset, y_offset))
-        map[mouse_motion_tile_x, mouse_motion_tile_y].redraw = True
+        map[mouse_motion_tile_x, mouse_motion_tile_y].redraw = True  # So it gets overriden when we move the mouse again
         # ---------------------------------------------------------
-        # DRAWING - Bottom bar
         if tool == "select" and len(map[mouse_motion_tile_x, mouse_motion_tile_y].error_list) > 0:
             fading_text_element.add_to_queue(map[mouse_motion_tile_x, mouse_motion_tile_y].error_list[0])
 
-    # DRAWING Right Bar
-    side_bar_elements = generate_side_bar(tool, draw_style, icon_offset, window, map.settings)
+    # DRAWING Expansion Rectangles
     for rectangle in expansion_rectangles:
         rectangle.draw(window, x_offset, y_offset)
 
+    # DRAWING - Side bar
+    side_bar_elements = generate_side_bar(tool, draw_style, icon_offset, window, map.settings)
+    # Drawing - Bottom bar
     generate_bottom_bar(window, map, view, run_counter, clock, mouse_motion_tile_x, mouse_motion_tile_y, mouse_motion_x, mouse_motion_y, fading_text_element)
 
     if not pause:
@@ -282,6 +286,13 @@ while True:
     for i in range(TICK_RATE):
         x, y = randint(0, map.width-1), randint(0, map.height-1)  # randint excludes the last number, so we need to do -1
         map[x, y].type.on_random_tick(map, x, y)
+
+    # Loop over the x and y of the 2d numpy array vignette_values and draw the vignette
+    # for x in range(len(vignette_values)):
+    #     for y in range(len(vignette_values[0])):
+    #         # print(vignette_values[x, y])
+    #         if vignette_values[x, y] != 0:
+    #             window.blit(IMAGES["vignette"], (x, y))
 
     pygame.display.update()
 

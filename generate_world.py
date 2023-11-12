@@ -26,7 +26,7 @@ def generate_world(map_settings: MapSettingsType, seed: int | None = None) -> Ma
     world: np.ndarray[tuple[int, int], Tile] = np.array(  # type: ignore[assignment, type-var]
         [[Tile() for _ in range(map_height)] for _ in range(map_width)]
     )
-    noise = PerlinNoise(octaves=2, seed=seed or map_settings["seed"])
+    noise = PerlinNoise(octaves=2, seed=seed or map_settings["seed"])   #  or random.randint(0, 100)
     random.seed(seed or map_settings["seed"])
 
     for x in range(map_width):

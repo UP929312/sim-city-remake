@@ -1,5 +1,6 @@
 import sys
 from os import listdir
+# from random import randint
 from typing import Any, NoReturn
 
 import pygame
@@ -200,3 +201,23 @@ def draw_policy_screen(window: pygame.surface.Surface, settings: MapSettingsType
             handle_menu(window, "Policies", elements)
         except GoBack:
             return settings | {x.key: x.slider_element.value for x in elements if hasattr(x, "key")}  # type: ignore[union-attr, return-value]
+
+def dev_screen(window: pygame.surface.Surface, map: Map, dev_mode: bool) -> bool:
+    element_width, top_margin, left_margin, _ = margins(window)
+    # map_settings = map.settings
+    elements = [
+        BACK_BUTTON,
+        ToggleRow(left_margin, top_margin, element_width, 64, "Dev Mode Enabled", "dev_mode", dev_mode),
+        Label(f"Map width: {map.width}, height: {map.height}", left_margin, top_margin + 128, element_width, 64),
+        Label(f"Placeholder", left_margin, top_margin + 256, element_width, 64),
+        Label(f"Map seed: {map.settings['seed']}", left_margin, top_margin + 380, element_width, 64),
+        Button(left_margin, top_margin + 512, element_width, 64, "Give money", on_click=lambda *_: setattr(map, "cash", 99999)),
+        Button(left_margin, top_margin + 646, element_width, 64, "Expand Map", on_click=lambda *_: getattr(map, "expand")()),
+        # Button(left_margin, top_margin + 636, element_width, 64, "Regenerate World", on_click=lambda *_: (map := generate_world(map_settings=map_settings, seed=randint(1, 100)))),
+    ]
+    while True:
+        try:
+            handle_menu(window, "Dev Menu", elements)
+        except GoBack:
+            assert isinstance(elements[1], ToggleRow) and isinstance(elements[1].value, bool)
+            return elements[1].value

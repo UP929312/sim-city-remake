@@ -105,7 +105,9 @@ class Entity:
         self.current_loc = new_pos
         return self.current_loc[0], self.current_loc[1]
 
-    def draw(self, window: pygame.surface.Surface, x_offset: int, y_offset: int) -> None:
+    def draw(self, window: pygame.surface.Surface, x_offset: int, y_offset: int, view: str) -> None:
+        if view not in ("general_view", "crazy_view", "colour_view"):
+            return
         image = rotated_entities_cache[f"{self.__class__.__name__.lower()}_{self.entity_subtype}_rotation_{self.rotation}"]
 
         x_loc = (self.current_loc[0] * TILE_WIDTH) + self.x_offset + x_offset
